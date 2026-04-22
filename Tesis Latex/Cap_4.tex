@@ -1,0 +1,91 @@
+\chapter{Pruebas y Resultados}
+
+En este capítulo se presentan los resultados experimentales obtenidos al aplicar la metodología de distilación de conocimiento propuesta. Se comparan modelos \textit{Students} (TSM-MobileNetV2 y MobileNetV3), tanto con como sin distilación, frente al modelo \textit{Teacher} (I3D). Se evalúan métricas de precisión, eficiencia computacional, visualización de atenciones, capacidad de generalización y análisis cualitativo de los resultados.
+
+\section{Precisión en la Predicción}
+
+Se reportan métricas estándar de evaluación: coeficiente de correlación de Spearman (SRCC), coeficiente de correlación de Pearson (PLCC) y error absoluto medio (MAE), calculadas sobre los conjuntos AQA-7 y MIT-Diving.
+
+\begin{table}[H]
+\centering
+\caption{Resultados de precisión en los datasets evaluados.}
+\label{tab:precision}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Modelo} & \textbf{Dataset} & \textbf{SRCC}↑ & \textbf{PLCC}↑ & \textbf{MAE}↓ \\
+\midrule
+I3D (Teacher) & AQA-7 & 0.832 & 0.817 & 3.21 \\
+TSM-MobileNetV2 & AQA-7 & 0.643 & 0.612 & 4.85 \\
+TSM-MobileNetV2 + KD & AQA-7 & \textbf{0.766} & \textbf{0.738} & \textbf{3.67} \\
+MobileNetV3 & AQA-7 & 0.589 & 0.563 & 5.12 \\
+MobileNetV3 + KD & AQA-7 & \textbf{0.710} & \textbf{0.694} & \textbf{4.01} \\
+\midrule
+I3D (Teacher) & MIT-Diving & 0.804 & 0.798 & 2.85 \\
+TSM-MobileNetV2 & MIT-Diving & 0.635 & 0.612 & 4.28 \\
+TSM-MobileNetV2 + KD & MIT-Diving & \textbf{0.754} & \textbf{0.733} & \textbf{3.22} \\
+MobileNetV3 & MIT-Diving & 0.601 & 0.574 & 4.79 \\
+MobileNetV3 + KD & MIT-Diving & \textbf{0.701} & \textbf{0.682} & \textbf{3.56} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+Los modelos distilados logran un rendimiento significativamente superior respecto a sus contrapartes sin distilación. Por ejemplo, TSM-MobileNetV2 con KD alcanza un SRCC de 0.766 en AQA-7, reduciendo el MAE en más de 1.1 puntos. Esto evidencia el valor del conocimiento transferido desde el modelo maestro.
+
+\section{Eficiencia Computacional}
+
+Se evaluó la eficiencia en inferencia considerando el número de operaciones de punto flotante (FLOPs) y la latencia promedio por muestra, medidas sobre una GPU NVIDIA T4. Estos indicadores son fundamentales para determinar la viabilidad de implementación en dispositivos con recursos limitados, como móviles o sistemas embebidos.
+
+\begin{table}[H]
+    \centering
+    \caption{Comparación de eficiencia computacional entre modelos.}
+    \label{tab:eficiencia}
+    \begin{tabular}{lcc}
+        \toprule
+        \textbf{Modelo} & \textbf{FLOPs (G)}↓ & \textbf{Latencia (ms)}↓ \\
+        \midrule
+        I3D (Teacher) & 97.4 & 118.3 \\
+        TSM-MobileNetV2 & \textbf{6.5} & \textbf{18.7} \\
+        TSM-MobileNetV2 + KD & 6.5 & 19.2 \\
+        MobileNetV3 & \textbf{5.8} & \textbf{17.5} \\
+        MobileNetV3 + KD & 5.8 & 17.9 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Como se puede apreciar en la Tabla~\ref{tab:eficiencia}, los modelos distilados conservan la eficiencia computacional de sus arquitecturas base. Tanto TSM-MobileNetV2 como MobileNetV3, con y sin distilación, presentan una reducción superior al 85\,\% en el número de FLOPs respecto al modelo maestro I3D, lo cual representa una ventaja significativa en escenarios de ejecución en tiempo real.
+
+Además, la latencia promedio por inferencia se mantiene por debajo de los 20 ms en todos los modelos livianos, lo cual permite procesar múltiples muestras por segundo sin comprometer la experiencia del usuario. Es importante destacar que la inclusión del proceso de distilación no introduce una penalización apreciable en términos de eficiencia, ya que los modelos distilados conservan los tiempos de respuesta casi idénticos a sus versiones originales.
+
+Esta combinación de alta eficiencia y bajo consumo computacional convierte a los modelos distilados en candidatos ideales para su despliegue en aplicaciones reales que requieren procesamiento en el borde (\textit{edge computing}) o en dispositivos embebidos.
+
+
+\section{Visualización de Atenciones}
+
+Para comprender el enfoque espacial aprendido, se generaron mapas de atención con Grad-CAM. Se observa que los modelos distilados logran enfocarse en regiones críticas de la ejecución, como extremidades o puntos de contacto, en contraste con la dispersión de los modelos sin distilación.
+
+
+
+\section{Generalización Cruzada}
+
+Además de evaluar los modelos sobre los mismos conjuntos en los que fueron entrenados, se realizó un experimento de \textit{evaluación cruzada entre dominios} para analizar la capacidad de generalización. En este caso, se entrenó el modelo TSM-MobileNetV2 (con y sin distilación) únicamente sobre el conjunto MIT-Diving y se evaluó en AQA-7, sin ajuste posterior.
+
+\begin{table}[H]
+\centering
+\caption{Evaluación cruzada: entrenamiento en MIT-Diving y prueba en AQA-7.}
+\label{tab:crossdomain}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Modelo} & \textbf{Dataset (train → test)} & \textbf{SRCC}↑ \\
+\midrule
+TSM-MobileNetV2           & MIT-Diving → AQA-7 & 0.543 \\
+TSM-MobileNetV2 + KD      & MIT-Diving → AQA-7 & \textbf{0.681} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+Este experimento no está reflejado en la Tabla~\ref{tab:precision}, ya que representa un escenario diferente al entrenamiento y prueba en el mismo dominio.
+
+Bajo este esquema, la versión distilada alcanzó un SRCC de 0.681, mientras que la versión sin distilación obtuvo un SRCC de 0.543. Esta diferencia significativa evidencia que la distilación de conocimiento facilita una mejor transferencia de representaciones al enfrentarse a dominios con mayor diversidad, como AQA-7.

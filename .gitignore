@@ -1,0 +1,42 @@
+# Plan de desarrollo (uso interno)
+PLAN_DESARROLLO.md
+
+# Herramientas de Claude
+.claude/
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lot
+*.out
+*.synctex.gz
+*.toc
+*.xdv
+
+# Backups
+*.bak
+*.bak.*
+
+# Entornos Python (para cuando se cree code/)
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Experimentos y datos
+experiments/
+data/raw/
+data/preprocessed/
+wandb/
+*.pth
+*.ckpt
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store

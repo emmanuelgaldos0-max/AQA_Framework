@@ -1,0 +1,62 @@
+\chapter{Introducción}
+
+\section{Motivación y Contexto}
+
+En los últimos años, el reconocimiento automático de acciones humanas en video ha emergido como un área clave dentro del campo de la visión por computadora, con aplicaciones que abarcan desde la seguridad y el entretenimiento hasta la medicina y el deporte. No obstante, más allá de identificar qué acción se realiza en un video, ha cobrado gran relevancia una tarea más compleja: la \textbf{Evaluación de la Calidad de Acciones} (\textit{Action Quality Assessment}, \ac{AQA}). Esta disciplina busca medir la calidad con la que se ejecuta una acción, considerando criterios como la técnica, la fluidez y la precisión del movimiento. A diferencia del reconocimiento de acciones, \ac{AQA} introduce desafíos adicionales tanto en términos de modelado como de evaluación.
+
+El interés por \ac{AQA} ha crecido sustancialmente debido a su potencial impacto en contextos donde el desempeño técnico es crítico. En el ámbito deportivo, por ejemplo, entrenadores y atletas pueden aprovechar sistemas automáticos para recibir retroalimentación objetiva y detallada que complemente la evaluación humana, reduciendo sesgos y mejorando el entrenamiento personalizado. De igual forma, en el campo de la rehabilitación física, los profesionales de la salud podrían beneficiarse del uso de modelos que evalúan en tiempo real la correcta ejecución de ejercicios terapéuticos, facilitando así el seguimiento remoto de pacientes y disminuyendo la necesidad de supervisión constante.
+
+A pesar de estos beneficios potenciales, uno de los principales obstáculos para la adopción de sistemas de \ac{AQA} en escenarios reales radica en su elevada demanda computacional. Modelos de alto rendimiento, como los basados en arquitecturas tridimensionales profundas (por ejemplo, I3D), han demostrado una alta precisión al capturar patrones espacio-temporales complejos. Sin embargo, su tamaño y costo computacional los hacen inviables para aplicaciones que requieren baja latencia, eficiencia energética o procesamiento local. Esto pone en evidencia la necesidad urgente de soluciones más eficientes, capaces de ofrecer resultados competitivos sin depender de infraestructuras costosas o de alto consumo.
+
+En este contexto, arquitecturas livianas como \ac{TSM} y MobileNet-V3 se presentan como alternativas prometedoras. Estas redes son ampliamente utilizadas en entornos con recursos limitados debido a su eficiencia, facilidad de implementación y disponibilidad en plataformas como Google Colab o incluso dispositivos móviles. No obstante, cuando se entrenan desde cero en tareas complejas como \ac{AQA}, estas arquitecturas suelen mostrar una pérdida significativa de rendimiento en comparación con modelos más complejos.
+
+Para enfrentar este dilema, la \textbf{distilación de conocimiento} (\textit{Knowledge Distillation}, \ac{KD}) surge como una estrategia efectiva. Mediante esta técnica, se transfiere el conocimiento aprendido por un modelo complejo (denominado \textit{Teacher}) a una arquitectura más ligera (\textit{Student}), con el objetivo de replicar su comportamiento de forma más eficiente. Aunque existen trabajos que aplican \ac{KD} en tareas generales de visión por computadora, la combinación específica de mecanismos de atención espacio-temporal y alineación temporal ha sido poco explorada dentro del contexto de \ac{AQA}. Esta brecha representa una oportunidad metodológica valiosa para avanzar hacia soluciones más prácticas y generalizables.
+
+\section{Planteamiento del Problema}
+
+Diversas investigaciones han demostrado que los modelos profundos especializados en tareas de \ac{AQA}, como los basados en I3D, pueden alcanzar altos niveles de rendimiento al capturar patrones espacio-temporales complejos presentes en las acciones humanas. No obstante, su alto costo computacional, tanto en términos de tiempo de inferencia como de consumo energético, los hace inadecuados para escenarios de bajo consumo o de procesamiento en tiempo real.
+
+La creciente necesidad de ejecutar modelos de inteligencia artificial en dispositivos con recursos limitados ha impulsado la exploración de arquitecturas más ligeras, como \ac{TSM} o MobileNet-V3. Sin embargo, estas alternativas, aunque eficientes, suelen presentar una pérdida de precisión considerable al ser entrenadas desde cero en tareas complejas como \ac{AQA}. Por tanto, se requiere un mecanismo que permita combinar lo mejor de ambos mundos: la precisión de los modelos pesados y la eficiencia de los modelos livianos.
+
+A partir de esta problemática, surge la siguiente \textbf{pregunta de investigación}:
+
+\begin{quote} \textbf{¿Cómo optimizar el proceso de transferencia de conocimiento desde un modelo complejo de \ac{AQA} hacia una arquitectura más ligera, de manera que se preserve un rendimiento aceptable y se habilite su uso en entornos con recursos computacionales limitados?} \end{quote}
+
+Responder a esta pregunta requiere el diseño de una estrategia de distilación adaptada específicamente al dominio del análisis de video, considerando tanto las características espacio-temporales de la tarea como las capacidades diferenciadas de las arquitecturas \textit{Teacher} y \textit{Student}.
+
+\section{Objetivos}
+
+\subsection{Objetivo General}
+
+Desarrollar una metodología eficiente de distilación de conocimiento que permita transferir el rendimiento de un modelo complejo basado en I3D hacia arquitecturas livianas, como \ac{TSM} y MobileNet-V3, aplicadas a la evaluación de la calidad de acciones humanas en video.
+
+\subsection{Objetivos Específicos}
+
+\begin{itemize} \item Investigar el estado del arte en técnicas de \ac{AQA} y distilación de conocimiento en visión por computadora, identificando enfoques previos exitosos y sus limitaciones. \item Diseñar una estrategia de distilación que integre mecanismos complementarios, como el alineamiento de mapas de atención espacio-temporales y la sincronización de representaciones intermedias en el tiempo. \item Implementar y entrenar modelos \textit{Student} livianos, utilizando conjuntos de datos estándares de \ac{AQA} y empleando como referencia un modelo \textit{Teacher} basado en I3D preentrenado. \item Evaluar experimentalmente la eficacia de la estrategia propuesta mediante métricas de precisión (SRCC, PLCC, MAE) y de eficiencia computacional (tiempo de inferencia, uso de memoria, FLOPs). \item Comparar el rendimiento de los modelos distilados con sus versiones sin distilación y con otras arquitecturas modernas, analizando los beneficios concretos de la metodología desarrollada. \end{itemize}
+
+\section{Organización de la Tesis}
+\label{sec:organizacion}
+
+El presente documento está estructurado de la siguiente manera:
+
+\begin{itemize}
+    \item \textbf{Capítulo 2: Marco Teórico} - Fundamentos de \textit{Action Quality Assessment} (AQA) y Distilación de Conocimiento (KD), incluyendo métricas clave (SRCC, PLCC, MAE) y conjuntos de datos (MIT-Diving, AQA-7).
+    
+    \item \textbf{Capítulo 3: Estado del Arte} - Revisión de técnicas recientes en KD para AQA, con énfasis en distilación intermodal y auto-distilación multiescalar.
+    
+    \item \textbf{Capítulo 4: Propuesta} - Metodología completa con:
+    \begin{itemize}
+        \item Modelos: I3D (Teacher) y TSM/MobileNet-V3 (Students).
+        \item Mecanismos de distilación (atención espacio-temporal y alineación de características).
+        \item Pipeline de preprocesamiento y evaluación.
+    \end{itemize}
+    
+    \item \textbf{Capítulo 5: Resultados} - Análisis comparativo de modelos distilados vs. baseline, métricas de precisión y eficiencia.
+    
+    \item \textbf{Capítulo 6: Conclusiones} - Hallazgos clave, limitaciones y direcciones futuras para KD en AQA.
+\end{itemize}
+
+
+
+% \section{Cronograma}
+% Sección de cronograma eliminada: corresponde únicamente al plan de tesis, no a la versión final.

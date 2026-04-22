@@ -1,0 +1,270 @@
+\chapter{Propuesta}
+\label{cap:propuesta}
+Este capítulo detalla la metodología propuesta para optimizar modelos de \textit{Action Quality Assessment} (AQA) mediante distilación de conocimiento (\textit{Knowledge Distillation}, KD). El objetivo es transferir el rendimiento de un modelo complejo (\textit{Teacher}) a arquitecturas ligeras (\textit{Students}), preservando la precisión en la evaluación de calidad de acciones y garantizando eficiencia computacional.
+
+% ---
+\section{Planteamiento de la solución}
+
+La solución propuesta se basa en un esquema de destilación de conocimiento (\textit{Knowledge Distillation}, KD) adaptado específicamente para secuencias de video en tareas de evaluación de calidad de acciones (AQA). El objetivo es transferir conocimiento desde un modelo \textit{Teacher} (I3D) hacia modelos \textit{Student} livianos (TSM-MobileNetV2 y MobileNetV3) utilizando tres señales de supervisión complementarias durante el entrenamiento del Student:
+
+\begin{itemize}
+    \item \textbf{Distilación de atención espacio-temporal ($\mathcal{L}_{att}$)}: Se extraen los mapas de atención espacio-temporal generados a partir de las activaciones convolucionales 3D del Teacher (I3D), que tienen dimensiones $T \times H \times W$, donde $T$ es el número de cuadros, $H$ y $W$ las dimensiones espaciales. Estos mapas se interpolan o reducen según sea necesario para alinearse con las dimensiones internas del Student. Luego, se utiliza una pérdida de divergencia (por ejemplo, Kullback-Leibler o MSE) para alinear las distribuciones de atención generadas por ambos modelos.
+
+    \item \textbf{Alineación de representaciones intermedias ($\mathcal{L}_{temp}$)}: Se seleccionan capas intermedias específicas del Teacher y del Student (por ejemplo, la salida del tercer bloque inflado del I3D y del tercer bloque residual del Student), y se proyectan sus activaciones a una dimensión común usando capas lineales. Posteriormente, se aplica una pérdida de distancia (MSE) entre estas representaciones, cuadro a cuadro, para forzar la sincronización temporal de características relevantes.
+
+    \item \textbf{Pérdida de regresión ($\mathcal{L}_{reg}$)}: El modelo Student se entrena también con la supervisión directa de las etiquetas reales de calidad (puntuaciones de AQA). Se utiliza como métrica principal el Error Absoluto Medio (MAE), calculado entre la predicción final del Student y la etiqueta real.
+\end{itemize}
+
+La función de pérdida total que guía el entrenamiento del modelo Student combina estos tres componentes de la siguiente manera:
+
+\[
+\mathcal{L}_{total} = \alpha \cdot \mathcal{L}_{reg} + \beta \cdot \mathcal{L}_{att} + \gamma \cdot \mathcal{L}_{temp}
+\]
+
+donde:
+\begin{itemize}
+    \item $\alpha$, $\beta$, y $\gamma$ son hiperparámetros que controlan la contribución relativa de cada término.
+    \item $\mathcal{L}_{reg}$: pérdida de regresión (MAE).
+    \item $\mathcal{L}_{att}$: pérdida por distilación de atención (p. ej., MSE o KL entre mapas de atención).
+    \item $\mathcal{L}_{temp}$: pérdida de alineación temporal entre representaciones internas.
+\end{itemize}
+
+Durante el entrenamiento, solo el modelo Student es actualizado; el modelo Teacher permanece congelado. La implementación de la distilación requiere:
+\begin{itemize}
+    \item Extraer y almacenar las activaciones intermedias del Teacher (I3D) en los puntos definidos, así como los mapas de atención derivados de dichas activaciones.
+    \item Ajustar dimensionalmente las salidas del Teacher para que puedan ser comparadas con las del Student, utilizando capas de proyección lineales o convolucionales según corresponda.
+    \item Calcular cada componente de la función de pérdida en cada paso de entrenamiento y combinarla según los coeficientes definidos.
+\end{itemize}
+
+Este diseño garantiza que el Student no solo aprenda a replicar la salida final del Teacher, sino también a internalizar sus mecanismos de atención y representación temporal, facilitando así una transferencia más rica y efectiva del conocimiento.
+
+
+% ---
+\section{Modelos seleccionados}
+
+Para llevar a cabo la distilación de conocimiento en el contexto de AQA en video, se han seleccionado un modelo \textit{Teacher} y dos modelos \textit{Student} con arquitecturas contrastantes en cuanto a capacidad y eficiencia computacional. Esta combinación permite evaluar la eficacia de la transferencia de conocimiento desde un modelo grande y preciso hacia modelos ligeros y adecuados para escenarios con recursos limitados.
+
+\subsection{Modelo Teacher}
+
+\begin{itemize}
+    \item \textbf{Arquitectura}: I3D (\textit{Inflated 3D ConvNet}), basado en la expansión de filtros 2D preentrenados a 3D para capturar información espacial y temporal simultáneamente.
+    \item \textbf{Características}:
+        \begin{itemize}
+            \item Preentrenado en el conjunto de datos \textit{Kinetics-400}, con capacidad para generalizar sobre acciones complejas.
+            \item Reconocido por su alto rendimiento en tareas de AQA y clasificación de acciones.
+            \item Profundidad y complejidad elevadas: alto número de parámetros y consumo de memoria, lo que lo hace poco adecuado para aplicaciones en tiempo real o en dispositivos embebidos.
+            \item Salida: Puntuación continua normalizada en el rango $[0, 1]$, representando el nivel de calidad de ejecución de la acción.
+        \end{itemize}
+    \item \textbf{Rol en esta tesis}: Sirve como fuente de conocimiento para la distilación, generando mapas de atención y representaciones intermedias que guían el entrenamiento de los modelos Student.
+\end{itemize}
+
+\subsection{Modelos Students}
+
+Los modelos Students han sido seleccionados por su bajo costo computacional, con el objetivo de demostrar que es posible mantener un rendimiento aceptable en AQA tras la destilación desde un Teacher más complejo.
+
+\begin{itemize}
+    \item \textbf{TSM-MobileNetV2}:
+        \begin{itemize}
+            \item Arquitectura compuesta por una base MobileNetV2 adaptada para video mediante el uso de \textit{Temporal Shift Modules} (TSM), que permiten el modelado de relaciones temporales sin convoluciones 3D.
+            \item Permite la reutilización de modelos 2D preentrenados en imagen estática, añadiendo mínima carga computacional para capturar dinámica temporal.
+            \item Ideal para implementación en dispositivos con recursos limitados como teléfonos móviles o robots.
+        \end{itemize}
+    \item \textbf{MobileNetV3}:
+        \begin{itemize}
+            \item Arquitectura optimizada para eficiencia, incorporando activaciones \textit{h-swish} y bloques \textit{Squeeze-and-Excitation} (SE) para mejorar la capacidad expresiva sin incrementar significativamente el costo computacional.
+            \item Aunque originalmente diseñado para imágenes, se evalúa su rendimiento en tareas de video tras entrenamiento con distilación, sin mecanismos explícitos de modelado temporal.
+            \item Su inclusión permite analizar la transferencia de conocimiento espacio-temporal a un modelo que no fue diseñado para ello.
+        \end{itemize}
+\end{itemize}
+
+Cada modelo Student será entrenado bajo el esquema de distilación propuesto, recibiendo señales desde el Teacher (I3D) tanto a nivel de atención como de representaciones internas, además de la supervisión directa por las etiquetas de calidad. Esta configuración permite evaluar de forma sistemática el impacto de la distilación sobre distintas arquitecturas livianas.
+
+
+% ---
+\section{Datasets y preprocesamiento}
+\label{sec:datasets}
+
+\subsection{Conjuntos de datos}
+
+Se emplearon tres conjuntos de datos ampliamente utilizados en la tarea de \textit{Action Quality Assessment} (AQA). Cada uno posee características distintas en cuanto a dominio, número de muestras, estructura y tipo de anotaciones. A continuación se detallan:
+
+\begin{itemize}
+    \item \textbf{MIT-Diving}:
+        \begin{itemize}
+            \item \textbf{Cantidad de videos}: 370 clips de clavados olímpicos desde plataforma de 10 metros.
+            \item \textbf{Duración promedio por video}: 3.2 segundos.
+            \item \textbf{Resolución promedio}: 480p (algunos videos con compresión alta).
+            \item \textbf{Peso total del dataset}: Aproximadamente 1.2 GB.
+            \item \textbf{Anotaciones}: Cada video contiene una puntuación única en el rango $[0, 100]$ proporcionada por jueces expertos, considerando técnica, entrada al agua y estética.
+            \item \textbf{Formato de los videos}: .avi.
+            \item \textbf{Observaciones}: Algunos videos presentan condiciones adversas de iluminación y variabilidad de ángulos de cámara, lo cual incrementa la dificultad de la tarea.
+        \end{itemize}
+    
+    \item \textbf{AQA-7}:
+        \begin{itemize}
+            \item \textbf{Cantidad de videos}: 1,189 muestras distribuidas en 7 disciplinas deportivas distintas: clavados, gimnasia artística, salto con pértiga, esquí estilo libre, patinaje artístico, patinaje en línea y snowboard.
+            \item \textbf{Duración promedio por video}: 5 a 8 segundos.
+            \item \textbf{Resolución promedio}: 720p.
+            \item \textbf{Peso total del dataset}: Aproximadamente 3.6 GB.
+            \item \textbf{Anotaciones}: Etiquetas de puntuación continua específicas para cada disciplina, normalmente en rangos de 0 a 100. Se evalúan mediante métricas SRCC, PLCC y MAE.
+            \item \textbf{Formato de los videos}: .avi.
+            \item \textbf{Ventaja}: Amplia diversidad inter-acción, lo que permite evaluar la capacidad de generalización del modelo frente a distintas dinámicas temporales y visuales.
+        \end{itemize}
+
+    \item \textbf{MTL-AQA}:
+        \begin{itemize}
+            \item \textbf{Cantidad de videos}: 1,412 clips de clavados desde trampolín y plataforma.
+            \item \textbf{Duración promedio por video}: 3.5 segundos.
+            \item \textbf{Resolución promedio}: 720p.
+            \item \textbf{Peso total del dataset}: Aproximadamente 2.8 GB.
+            \item \textbf{Anotaciones}: Etiquetas multitarea, que incluyen:
+                \begin{itemize}
+                    \item Puntuación global de ejecución.
+                    \item Subcomponentes como altura, rotación, entrada al agua, postura y sincronización.
+                \end{itemize}
+            \item \textbf{Formato de los videos}: .avi.
+            \item \textbf{Relevancia}: Permite diseñar estrategias de distilación jerárquica al transferir conocimiento desde etiquetas intermedias hacia una salida final más precisa.
+        \end{itemize}
+\end{itemize}
+
+
+\subsection{Preprocesamiento}
+El pipeline de preprocesamiento se divide en cuatro etapas:
+
+\subsubsection{Extracción y muestreo de frames}
+\begin{itemize}
+    \item \textbf{Herramienta}: \textit{OpenCV} (cv2.VideoCapture).
+    \item \textbf{Tasa de muestreo}: 25 FPS (balance entre fluidez temporal y costo computacional).
+    \item \textbf{Filtrado}: Eliminación de frames corruptos o vacíos mediante umbralización de histograma.
+\end{itemize}
+
+\subsubsection{Segmentación temporal}
+\begin{itemize}
+    \item \textbf{Duración de clips}: 64 frames (2.56 segundos a 25 FPS) para acciones rápidas (ej.: clavados) o 128 frames (5.12 segundos) para secuencias prolongadas (ej.: rutinas gimnásticas).
+    \item \textbf{Solapamiento}: 20\% entre clips contiguos para aumentar la diversidad de muestras.
+    \item \textbf{Alineación con anotaciones}: Cada clip hereda la puntuación del video original. Para MTL-AQA, se promedian las sub-etiquetas dentro del intervalo del clip.
+\end{itemize}
+
+\subsubsection{Transformación espacial}
+\begin{itemize}
+    \item \textbf{Redimensionamiento}: Interpolación bicúbica a $224 \times 224$ píxeles (compatible con las arquitecturas base).
+    \item \textbf{Normalización}: Ajuste de valores de píxeles usando estadísticos de \textit{Kinetics-400}:
+        \[
+        \text{Pixel}_{\text{norm}} = \frac{\text{Pixel}_{\text{raw}} - [0.43216, 0.394666, 0.37645]}{[0.22803, 0.22145, 0.216989]}
+        \]
+        donde los valores corresponden a (media, std) por canal RGB.
+    \item \textbf{Aumento de datos}: Durante entrenamiento, se aplican:
+        \begin{itemize}
+            \item Volteo horizontal aleatorio (probabilidad 0.5).
+            \item Recorte temporal aleatorio (variación de $\pm10\%$ en la duración del clip).
+        \end{itemize}
+\end{itemize}
+
+\subsubsection{Formateo final}
+\begin{itemize}
+    \item \textbf{Estructura}: Tensores de dimensión $[B, C, T, H, W]$, donde:
+        \begin{itemize}
+            \item $B$: Tamaño del \textit{batch} (ej.: 8, 16).
+            \item $C$: Canales (3 para RGB).
+            \item $T$: Frames temporales (64 o 128).
+            \item $H, W$: Altura y anchura (224).
+        \end{itemize}
+    \item \textbf{Compatibilidad}: Los tensores se ajustan a los requerimientos de entrada de I3D (Teacher) y TSM/MobileNet-V3 (Students).
+\end{itemize}
+
+\subsection{Consideraciones técnicas}
+\begin{itemize}
+    \item \textbf{Balanceo}: Para datasets con distribución sesgada (ej.: MIT-Diving con mayoría de puntuaciones medias), se aplica muestreo estratificado durante el entrenamiento.
+    \item \textbf{División}: 70\% entrenamiento, 15\% validación, 15\% prueba (conservando proporciones por categoría en AQA-7).
+    \item \textbf{Reproducibilidad}: Semillas fijas para \textit{random cropping} y shuffling.
+\end{itemize}
+
+% ---
+\section{Metodología de Evaluación}
+\label{sec:evaluacion}
+
+\subsection{Métricas de Precisión}
+
+Para cuantificar el rendimiento de los modelos en la tarea de \textit{Action Quality Assessment} (AQA), se emplearán las siguientes métricas estadísticas:
+
+\begin{itemize}
+    \item \textbf{Coeficiente de Correlación de Spearman (SRCC)}: Evalúa la correlación monotónica entre los rangos de las predicciones del modelo y los rangos de las puntuaciones reales. Es útil cuando no se asume una relación lineal exacta entre las variables.
+    \begin{itemize}
+        \item \textit{Unidad}: Adimensional, valor en el rango \([-1, 1]\).
+        \item \textit{Interpretación}: Un valor cercano a \(1\) indica una alta concordancia en el orden relativo de las predicciones y etiquetas. \textbf{Un valor más alto es mejor}.
+    \end{itemize}
+    \[
+    \rho = 1 - \frac{6 \sum d_i^2}{n(n^2 - 1)}
+    \]
+    donde \(d_i\) es la diferencia entre los rangos de las predicciones y las etiquetas para cada muestra, y \(n\) es el número total de muestras.
+
+    \item \textbf{Coeficiente de Correlación Lineal de Pearson (PLCC)}: Mide la relación lineal entre los valores predichos y las etiquetas reales.
+    \begin{itemize}
+        \item \textit{Unidad}: Adimensional, valor en el rango \([-1, 1]\).
+        \item \textit{Interpretación}: Un valor cercano a \(1\) indica una fuerte relación lineal positiva. \textbf{Un valor más alto es mejor}.
+    \end{itemize}
+    \[
+    r = \frac{\sum (x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum (x_i - \bar{x})^2 \sum (y_i - \bar{y})^2}}
+    \]
+
+    \item \textbf{Error Absoluto Medio (MAE)}: Mide el error promedio absoluto entre las predicciones del modelo y las puntuaciones reales, en la misma escala original de las etiquetas.
+    \begin{itemize}
+        \item \textit{Unidad}: La misma que las puntuaciones (por ejemplo, puntos sobre 100).
+        \item \textit{Interpretación}: Cuanto menor sea el MAE, mayor será la precisión del modelo. \textbf{Un valor más bajo es mejor}.
+    \end{itemize}
+    \[
+    \text{MAE} = \frac{1}{n} \sum_{i=1}^n |y_i - \hat{y}_i|
+    \]
+\end{itemize}
+
+
+\subsection{Métricas de Eficiencia}
+
+Para evaluar la viabilidad computacional de los modelos propuestos, se utilizarán las siguientes métricas cuantitativas:
+
+\begin{itemize}
+    \item \textbf{FLOPs (Floating Point Operations)}: Representa el número total de operaciones de punto flotante necesarias para procesar un clip de entrada. Se calcula utilizando la librería \texttt{fvcore}.
+    \begin{itemize}
+        \item \textit{Unidad}: GigaFLOPs (GFLOPs).
+        \item \textit{Interpretación}: Menores valores indican menor complejidad computacional. \textbf{Un valor más bajo es mejor}, ya que implica menor consumo de recursos y mayor eficiencia.
+    \end{itemize}
+
+    \item \textbf{Latencia de Inferencia}: Tiempo promedio que el modelo requiere para procesar un clip de entrada, medido en una GPU NVIDIA T4. Este valor excluye el tiempo de carga de datos y refleja únicamente el tiempo de ejecución del modelo.
+    \begin{itemize}
+        \item \textit{Unidad}: Milisegundos (ms).
+        \item \textit{Interpretación}: Una latencia baja es deseable para aplicaciones en tiempo real. \textbf{Un valor más bajo es mejor}, ya que indica mayor rapidez de respuesta.
+    \end{itemize}
+\end{itemize}
+
+Estas métricas permiten evaluar no solo la precisión, sino también la factibilidad de implementar los modelos en entornos reales, particularmente en dispositivos de bajo consumo o aplicaciones que requieren respuestas inmediatas.
+
+
+\subsection{Protocolo Experimental}
+\begin{enumerate}
+    \item \textbf{División de Datos}: 
+    \begin{itemize}
+        \item 70\% entrenamiento, 15\% validación, 15\% prueba.
+        \item Muestreo estratificado para mantener la distribución de puntuaciones en cada conjunto.
+    \end{itemize}
+
+    \item \textbf{Comparativas}:
+    \begin{itemize}
+        \item Modelos \textit{Students} (TSM, MobileNet-V3) con y sin distilación.
+        \item Modelos \textit{Teacher} (I3D) y arquitecturas ligeras alternativas (X3D, MoViNet).
+    \end{itemize}
+
+    \item \textbf{Repetibilidad}: 
+    \begin{itemize}
+        \item 3 ejecuciones con semillas aleatorias diferentes.
+        \item Reporte de media y desviación estándar.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Análisis Adicionales}
+\begin{itemize}
+    \item \textbf{Mapas de Atención}: Visualización de las regiones espaciotemporales consideradas críticas por los modelos, usando Grad-CAM.
+
+    \item \textbf{Evaluación Cruzada}: Entrenamiento en un dominio (ej.: MIT-Diving) y prueba en otro (ej.: AQA-7) para medir generalización.
+
+    \item \textbf{Benchmark de Hardware}: Medición de FLOPs y latencia en dispositivos embebidos (NVIDIA Jetson Nano).
+\end{itemize}

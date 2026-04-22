@@ -1,0 +1,201 @@
+
+
+
+
+
+
+
+
+%NUeva estructuracion%
+
+\chapter{Marco Teórico}\label{chap:background}
+
+En este capítulo se exponen los fundamentos teóricos necesarios para comprender la evaluación de la calidad de acciones (\ac{AQA}) y la distilación de conocimiento (\ac{KD}) en el contexto de visión por computador. Se abordan las definiciones, desafíos inherentes, métricas de evaluación y estructuras arquitectónicas clave que sustentan la propuesta metodológica desarrollada en esta tesis.
+
+\section{Evaluación de la Calidad de Acciones}
+
+\subsection{Definición y desafíos}
+
+La \ac{AQA} tiene como objetivo cuantificar objetivamente la calidad de ejecución de acciones humanas capturadas en video. A diferencia de las tareas tradicionales de clasificación de acciones, donde se identifica qué acción se realiza, en \ac{AQA} se mide la competencia, técnica, fluidez y precisión con que se realiza dicha acción \cite{Zhou2025Survey}. Esta característica hace que la tarea sea particularmente exigente, pues implica una comprensión profunda del contenido visual y de las dinámicas temporales.
+
+\subsubsection{Limitaciones de los conjuntos de datos}
+
+\paragraph{Escasez de muestras y desequilibrio.}
+Los conjuntos de datos disponibles en AQA tienden a ser específicos de dominios muy concretos, como el clavado olímpico o la gimnasia artística. Esto conlleva una limitada diversidad de escenarios y una reducida cantidad de ejemplos etiquetados, lo cual complica el aprendizaje generalizable \cite{WangAQA2019}. Además, las etiquetas de calidad suelen distribuirse de forma sesgada, con acumulaciones en puntajes medios, lo que penaliza la capacidad de los modelos para identificar instancias en los extremos de calidad \cite{Wang2024Review}.
+
+\paragraph{Anotaciones subjetivas.}
+Las etiquetas suelen derivarse de la evaluación humana, típicamente por jueces expertos. Esta subjetividad introduce variabilidad y ruido en las etiquetas. Técnicas como el coeficiente $\kappa$ de Cohen o la correlación interevaluador se utilizan para medir consistencia, pero el proceso sigue siendo costoso y propenso a sesgos \cite{Li2019ActionEval}.
+
+\paragraph{Generalización y adaptabilidad.}
+Los modelos tienden a especializarse en un dominio específico y fallan al generalizar a nuevos tipos de acción o entornos sin un proceso de reentrenamiento. Las estrategias de aprendizaje multitarea y adaptación de dominio han mostrado avances limitados en este aspecto \cite{Parmar2019MTLAQA}.
+
+\subsubsection{Retos computacionales}
+
+\paragraph{Complejidad espacio–temporal.}
+Capturar dependencias espaciales y temporales de forma conjunta exige arquitecturas profundas que trabajen con secuencias completas. Modelos como \ac{I3D} operan con convoluciones 3D que implican un alto costo computacional y grandes requerimientos de memoria \cite{Carreira2017I3D}.
+
+\paragraph{Latencia y tiempo real.}
+La evaluación de calidad en tiempo real es relevante para aplicaciones móviles o sistemas de retroalimentación inmediata. Modelos livianos como \ac{TSM} o MobileNet-V3 sacrifican parte de su precisión para lograr una menor latencia de inferencia, lo que plantea un desafío al balancear velocidad y exactitud \cite{Howard2019MobileNetV3,Wang2024Review}.
+
+\subsubsection{Variabilidad intra‐clase}
+
+Acciones de la misma categoría pueden diferir en estilo, velocidad, o incluso en perspectiva de grabación. Esta variabilidad intra-clase dificulta la generación de representaciones robustas que capten la esencia de lo que constituye una ejecución “de calidad”. Un ejemplo claro se da en los clavados olímpicos, donde ejecuciones técnicamente distintas pueden ser igualmente válidas, dependiendo del estilo del atleta \cite{Pirsiavash2014AssessedQuality,Yu2021GroupAware}.
+
+\subsection{Datasets y métricas}
+
+En la Tabla~\ref{tab:aqa_datasets} se enumeran los principales datasets empleados en tareas de \ac{AQA}, destacando su dominio de aplicación, la escala de puntuación y las métricas de evaluación.
+
+Las métricas más utilizadas incluyen:
+
+\begin{itemize}
+    \item \textbf{SRCC (Spearman Rank Correlation Coefficient)}: mide la correlación entre el orden de las predicciones y las etiquetas reales.
+    \item \textbf{PLCC (Pearson Linear Correlation Coefficient)}: evalúa la relación lineal entre puntuaciones predichas y reales.
+    \item \textbf{MAE (Mean Absolute Error)}: cuantifica el error promedio absoluto entre predicción y verdad de terreno.
+\end{itemize}
+
+\begin{table}[ht]
+    \centering
+    \caption{Principales datasets empleados en \ac{AQA}.}
+    \label{tab:aqa_datasets}
+    \begin{tabular}{|l|c|p{8.5cm}|}
+    \hline
+    \textbf{Dataset} & \textbf{Año} & \textbf{Descripción y métricas} \\
+    \hline
+    MIT-Diving & 2014 & 370 videos de clavados olímpicos, puntuación humana [0–100], métricas: SRCC, PLCC, MAE \cite{Pirsiavash2014AssessedQuality}. \\
+    \hline
+    UNLV-Vault & 2018 & 176 videos de salto de gimnasia, puntuaciones [0–20], SRCC, MAE \cite{Wang2022AQASurvey}. \\
+    \hline
+    AQA-7 & 2017 & 1 189 videos de siete deportes (clavados, gimnasia, esquí, etc.), anotaciones detalladas, SRCC, PLCC, MAE \cite{Parmar2017AQA7}. \\
+    \hline
+    MTL-AQA & 2019 & 1 412 videos de clavados (plataforma y trampolín), clasificación multietiqueta y regresión de puntuación \cite{Parmar2019MTLAQA}. \\
+    \hline
+    JIGSAWS & 2013 & Videos de suturas quirúrgicas, métricas de precisión de movimiento para AQA en cirugía robótica \cite{DiPietro2013JIGSAWS}. \\
+    \hline
+    \end{tabular}
+\end{table}
+
+\section{Distilación de Conocimiento}
+
+\subsection{Principios y variantes}
+
+La distilación de conocimiento (\ac{KD}) permite transferir información desde un modelo complejo y de alto rendimiento (Teacher) a un modelo más pequeño y eficiente (Student), con el objetivo de preservar la mayor cantidad de conocimiento posible. Esta técnica ha demostrado ser eficaz tanto en tareas de clasificación como de regresión, especialmente cuando se desea desplegar modelos en entornos con restricciones de cómputo \cite{Hinton2015Distilling}.
+
+Los principales enfoques de distilación son:
+
+\begin{itemize}
+  \item \textbf{Offline:} el Teacher se entrena previamente y sus parámetros permanecen fijos durante el proceso de distilación.
+  \item \textbf{Online:} Teacher y Student se entrenan simultáneamente, permitiendo una interacción dinámica entre ambos.
+  \item \textbf{Self-distillation:} distintos componentes de un mismo modelo actúan como Teacher y Student, transfiriendo internamente conocimiento entre capas o cabezas \cite{Sarkar2022XKD}.
+\end{itemize}
+
+\subsection{Distilación en visión por video}
+
+Aplicar \ac{KD} en videos requiere considerar el componente temporal, además del espacial. En este contexto, se han desarrollado diversas estrategias, tales como:
+
+\begin{itemize}
+  \item \textbf{Transferencia de mapas de atención:} el Student es guiado para replicar las regiones espacio-temporales en las que el Teacher focaliza su atención \cite{Yu2021GroupAware}.
+  \item \textbf{Alineación temporal:} sincronización de representaciones generadas por el Teacher y el Student en cada paso temporal, preservando patrones de movimiento \cite{Mun2019TKD}.
+  \item \textbf{Multimodalidad:} destilar conocimiento desde múltiples modalidades (RGB, flujo óptico, audio) hacia un Student que trabaja con una sola entrada, comúnmente RGB \cite{Cai2023VisionLanguageAQA}.
+\end{itemize}
+
+Cada una de estas variantes busca mantener la fidelidad de las representaciones aprendidas por el Teacher, al tiempo que reduce los costos de inferencia y despliegue. En capítulos posteriores se examinará cómo estas estrategias se pueden aplicar específicamente a la evaluación de calidad de acciones.
+
+\chapter{Estado del Arte}\label{chap:sota}
+
+En este capítulo se analizan los avances recientes en la aplicación de técnicas de distilación de conocimiento en la tarea de evaluación de la calidad de acciones (\ac{AQA}). Se destacan tanto las estrategias arquitectónicas como las innovaciones metodológicas que han permitido mejorar la eficiencia y generalización de los modelos en este dominio.
+
+\section{Distilación en AQA: avances recientes}
+
+El uso de distilación de conocimiento en AQA ha ganado atención por su capacidad de reducir la complejidad de modelos sin sacrificar precisión, lo cual resulta especialmente útil dada la escasez de datos anotados y la naturaleza computacionalmente intensiva de los modelos espacio-temporales.
+
+\subsection{Distilación intermodal: de múltiples flujos a RGB}
+
+La distilación intermodal busca transferir conocimiento desde modelos complejos que procesan múltiples modalidades de entrada (como RGB, flujo óptico y articulaciones 3D) hacia modelos más simples que utilizan una sola modalidad, típicamente RGB. Este enfoque permite conservar la capacidad de razonamiento temporal y espacial sin requerir múltiples entradas durante la inferencia, lo cual es crucial para aplicaciones en tiempo real y dispositivos con recursos limitados.
+
+Yu et al.~\cite{Yu2021GroupAware} proponen una estrategia denominada \textit{Group-Aware Knowledge Distillation} (GAKD), donde un modelo \textit{teacher} basado en múltiples flujos entrena a un modelo \textit{student} que opera únicamente sobre flujo RGB. Esta transferencia se realiza mediante una combinación de técnicas de distilación que incluyen:
+
+\begin{itemize}
+    \item \textbf{Distilación basada en atención espacial-temporal}: Se transfiere la atención del \textit{teacher} al \textit{student}, permitiendo que este último enfoque su atención en regiones y momentos clave de la secuencia de video.
+    \item \textbf{Distilación de activaciones intermedias}: Se alinean las activaciones de capas intermedias entre el \textit{teacher} y el \textit{student}, facilitando que el \textit{student} aprenda representaciones jerárquicas similares.
+    \item \textbf{Distilación de puntuaciones finales}: Se ajusta la salida final del \textit{student} para que coincida con la del \textit{teacher}, mejorando la precisión de las predicciones.
+\end{itemize}
+
+Además, GAKD incorpora un mecanismo de regresión contrastiva consciente de grupos (\textit{Group-aware Contrastive Regression}), donde se agrupan videos con atributos compartidos (como categoría y dificultad) y se aprende a predecir puntuaciones relativas entre ellos. Este enfoque reformula la evaluación de calidad de acciones como una tarea de comparación de pares, lo que ayuda a reducir la variabilidad en las puntuaciones y mejora la discriminación entre acciones similares.
+
+Evaluado sobre el conjunto de datos AQA-7, GAKD logra un aumento significativo en la correlación de Spearman en comparación con modelos unimodales no distilados, estableciendo un nuevo estado del arte en esta tarea. Estos resultados demuestran la efectividad de la distilación intermodal para mejorar el rendimiento de modelos ligeros sin incrementar su complejidad computacional.
+
+
+
+\subsection{Auto-distilación con supervisión multiescalar}
+
+La auto-distilación con supervisión multiescalar es una estrategia emergente en la evaluación automatizada de la calidad de acciones (AQA), que busca mejorar la eficiencia y generalización de los modelos sin depender de un \textit{teacher} externo. Zhou et al.~\cite{Zhou2023AQA_SD} introducen el modelo \textit{Self-Distilled AQA}, que emplea una arquitectura híbrida CNN-Transformer para capturar patrones espacio-temporales jerárquicos de manera eficiente.
+
+\paragraph{Arquitectura híbrida CNN-Transformer.} El modelo combina las capacidades de las redes convolucionales (CNN) para extraer características locales detalladas con la habilidad de los Transformers para modelar dependencias a largo plazo en secuencias temporales. Esta combinación permite una representación más rica y contextualizada de las acciones humanas, esencial para tareas de AQA donde tanto los detalles locales como la dinámica global son críticos.
+
+\paragraph{Supervisión multiescalar interna.} Una característica distintiva de \textit{Self-Distilled AQA} es su mecanismo de auto-distilación interna. En lugar de requerir un modelo \textit{teacher} separado, el modelo utiliza sus propias capas profundas como supervisores para las capas más superficiales. Se implementa una función de pérdida multiescalar que alinea las representaciones generadas en diferentes niveles de la red, promoviendo la coherencia y consistencia entre las distintas escalas de representación. Este enfoque se inspira en trabajos previos que han demostrado los beneficios de la auto-distilación en redes neuronales profundas~\cite{zhang2019be}.
+
+\paragraph{Eficiencia y despliegue.} Al eliminar la necesidad de un \textit{teacher} externo, el modelo reduce significativamente los costos computacionales y de almacenamiento asociados al entrenamiento y despliegue. Esta eficiencia lo hace particularmente adecuada para aplicaciones en dispositivos con recursos limitados, como sistemas móviles o embebidos, donde la capacidad de procesamiento y memoria es restringida.
+
+\paragraph{Resultados empíricos.} En evaluaciones realizadas sobre los conjuntos de datos AQA-7 y UNLV-Vault, que incluyen tareas como clavados y salto de viga, \textit{Self-Distilled AQA} logra un rendimiento comparable al de modelos más complejos como I3D y SlowFast, pero con una reducción de hasta el 50\% en el número de parámetros. Estos resultados destacan la efectividad del enfoque en términos de precisión y eficiencia, posicionándolo como una solución viable para aplicaciones prácticas de AQA.
+
+\paragraph{Perspectivas futuras.} La auto-distilación con supervisión multiescalar abre nuevas posibilidades para el desarrollo de modelos más compactos y generalizables en AQA. Su capacidad para integrar información jerárquica sin depender de supervisión externa lo convierte en un candidato prometedor para escenarios donde los datos etiquetados son escasos o costosos de obtener.
+
+
+\subsection{Distilación multimodal \textit{vision--language}}
+
+Un enfoque emergente en la distilación de conocimiento para AQA es la integración de señales provenientes de modalidades visuales y lingüísticas. Este paradigma se basa en la premisa de que las descripciones textuales de acciones humanas pueden aportar información semántica rica y complementaria a las representaciones visuales, especialmente en contextos donde los datos anotados manualmente son escasos o costosos de obtener.
+
+Cai et al.~\cite{Cai2023VisionLanguageAQA} proponen un marco en dos etapas que aprovecha este principio. En la primera etapa, se entrena un modelo \textit{vision--language} sobre un corpus no supervisado utilizando aprendizaje contrastivo: se optimiza la similitud entre videos y sus correspondientes descripciones en lenguaje natural, incentivando que el modelo capture aspectos semánticamente relevantes del contenido visual (por ejemplo, ``clavado con entrada limpia y buena forma'' o ``fallo al girar completamente''). Este modelo actúa como \textit{teacher} multimodal, y su conocimiento es transferido a un \textit{student} unimodal (solo RGB) en la segunda etapa mediante distilación.
+
+Durante el proceso de distilación, se aplican pérdidas auxiliares que alinean las representaciones latentes del student con aquellas generadas por el teacher \textit{vision--language}, sin necesidad de utilizar las descripciones textuales durante la inferencia. Esto permite que el student incorpore nociones semánticas complejas —como atributos estilísticos, errores técnicos o intenciones de la acción— sin depender de anotaciones explícitas al momento de la evaluación.
+
+Los resultados reportados en~\cite{Cai2023VisionLanguageAQA} muestran mejoras significativas en la capacidad del student para generalizar hacia dominios no vistos (p.~ej., deportes o tipos de acción distintos a los del entrenamiento), así como una mayor robustez frente a variaciones en ángulos de cámara o estilo de ejecución. Este enfoque representa una dirección prometedora hacia modelos más interpretables y adaptables en AQA, al permitir que el conocimiento lingüístico actúe como un puente semántico para la representación visual.
+
+Además, el uso de técnicas \textit{vision--language} abre nuevas posibilidades para el aprendizaje con pocos datos (\textit{few-shot learning}) y la transferencia de conocimiento desde dominios ampliamente etiquetados (como los usados en modelos tipo CLIP) hacia escenarios especializados como la evaluación técnica en deportes o cirugía asistida por robot.
+
+
+\subsection{Distilación temporal con alineación dinámica}
+
+Otra línea de investigación relevante en la distilación de conocimiento para AQA se centra en la dimensión temporal de las representaciones. A diferencia de enfoques tradicionales que distilan conocimiento sobre características agregadas (como el promedio de activaciones), las técnicas de distilación temporal buscan preservar la estructura secuencial de las acciones, capturando mejor los patrones de movimiento y transiciones clave a lo largo del tiempo.
+
+Mun et al.~\cite{Mun2019TKD} introducen un método denominado \textit{temporal knowledge distillation} (TKD), en el cual se entrena al \textit{student} para que imite dinámicamente las representaciones del \textit{teacher} en cada instante de tiempo, permitiendo una alineación más fina entre las señales internas de ambos modelos. Para lograrlo, el método incorpora una pérdida de distilación calculada sobre las secuencias completas de activaciones, en lugar de solo comparar vectores promedio. Además, se utilizan técnicas de alineación dinámica (como Dynamic Time Warping) para manejar posibles desincronizaciones en la ejecución de las acciones, lo que resulta especialmente importante en contextos donde la duración o el ritmo de las secuencias puede variar entre muestras.
+
+Este tipo de distilación resulta particularmente valioso en tareas de AQA donde la calidad de ejecución depende de la fluidez, consistencia y coordinación del movimiento a lo largo del tiempo. Por ejemplo, en disciplinas como clavados, patinaje artístico o rutinas gimnásticas, pequeñas variaciones temporales pueden implicar diferencias sustanciales en la puntuación otorgada por los jueces. Preservar estas características temporales permite al modelo estudiante capturar mejor los matices técnicos que afectan la calidad percibida de la acción.
+
+En sus experimentos sobre el conjunto de datos MTL-AQA, Mun et al.~demuestran que el enfoque TKD mejora significativamente el coeficiente de correlación por rangos de Spearman (SRCC), indicando una mejor concordancia entre las predicciones del modelo y las puntuaciones reales. Cabe destacar que estas mejoras se logran sin necesidad de aumentar la cantidad de datos ni recurrir a arquitecturas más complejas, lo que evidencia la eficiencia del enfoque desde el punto de vista del entrenamiento.
+
+Este tipo de distilación temporal abre nuevas posibilidades para capturar dinámicas complejas en modelos compactos y eficientes, y puede combinarse con otras estrategias (como distilación espacial o multimodal) para obtener representaciones más ricas y generalizables.
+
+
+\section{Síntesis y brechas detectadas}
+
+La Tabla~\ref{tab:aqa_kd_summary} resume los enfoques más representativos que han aplicado distilación de conocimiento en el contexto de AQA, detallando la modalidad de entrada, el tipo de distilación, y sus principales contribuciones.
+
+\begin{table}[ht]
+    \centering
+    \caption{Resumen de trabajos relevantes en distilación aplicada a AQA.}
+    \label{tab:aqa_kd_summary}
+    \begin{tabular}{|p{3.5cm}|p{2.2cm}|p{2.8cm}|p{4.2cm}|}
+    \hline
+    \textbf{Trabajo} & \textbf{Entrada Student} & \textbf{Tipo de distilación} & \textbf{Contribuciones principales} \\
+    \hline
+    Yu et al. (2021) & RGB & Intermodal multistream & Distilación desde flujo óptico y pose 3D hacia RGB. Mejora en AQA-7. \\
+    \hline
+    Zhou et al. (2023) & RGB & Self-distillation jerárquica & Supervisión interna multiescalar, arquitectura eficiente para dispositivos móviles. \\
+    \hline
+    Cai et al. (2024) & RGB & Multimodal (vision–language) & Distilación de modelos contrastivos vision–language hacia evaluadores de calidad. \\
+    \hline
+    Mun et al. (2019) & RGB & Temporal dinámica & Preserva patrones secuenciales mediante alineación temporal en la distilación. \\
+    \hline
+    \end{tabular}
+\end{table}
+
+A pesar de los avances, persisten importantes desafíos:
+
+\begin{itemize}
+  \item \textbf{Escasa generalización} a dominios no deportivos o con acciones más cotidianas.
+  \item \textbf{Falta de benchmark estandarizado} para comparar métodos de distilación en AQA.
+  \item \textbf{Subaprovechamiento de modelos ligeros} como estudiantes en entornos de bajo cómputo.
+\end{itemize}
+
+En el próximo capítulo se presenta la metodología propuesta en esta tesis, que busca abordar parte de estas limitaciones mediante una estrategia de distilación adaptada al dominio AQA y orientada a modelos eficientes.

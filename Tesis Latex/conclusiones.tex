@@ -1,0 +1,65 @@
+\chapter{Conclusiones y Trabajos Futuros}\label{chap:conclusiones}
+
+En este capítulo se presentan las conclusiones obtenidas a partir del desarrollo de la presente tesis, organizadas de acuerdo a los objetivos específicos definidos en el Capítulo de Introducción. Asimismo, se describen los principales problemas encontrados durante el proceso de investigación, se formulan recomendaciones basadas en la experiencia adquirida y se proponen líneas de trabajo futuro.
+
+\section{Conclusiones por Objetivos Específicos}
+
+\begin{itemize}
+    \item \textbf{Investigación del estado del arte en AQA y distilación de conocimiento:} Se realizó un análisis exhaustivo de los enfoques actuales aplicados a la Evaluación de la Calidad de Acciones (AQA), destacando avances como la distilación intermodal, la supervisión jerárquica y las técnicas multimodales vision–language. Este estudio permitió identificar brechas en el uso de arquitecturas livianas como estudiantes, así como oportunidades para transferencias más efectivas de conocimiento en escenarios con limitaciones computacionales.
+    
+    \item \textbf{Diseño de una estrategia de distilación espacio-temporal:} Se propuso una metodología que integra mecanismos de distilación de mapas de atención espacio-temporales y alineación de representaciones intermedias en el tiempo. Esta estrategia permitió al modelo estudiante replicar no solo la salida final del maestro (I3D), sino también su comportamiento interno, mejorando así la calidad del aprendizaje transferido.
+    
+    \item \textbf{Implementación de modelos Student livianos:} Se desarrollaron e implementaron versiones de TSM-MobileNetV2 y MobileNetV3, adaptadas a tareas de AQA, y se entrenaron utilizando conjuntos de datos representativos como MIT-Diving y AQA-7. La metodología contempló un pipeline robusto de preprocesamiento, balanceo de datos y normalización para asegurar resultados reproducibles y comparables.
+    
+    \item \textbf{Evaluación experimental:} Los modelos distilados superaron ampliamente a sus contrapartes no distiladas en métricas de precisión (SRCC, PLCC, MAE), alcanzando, por ejemplo, un SRCC de 0.766 en AQA-7 con TSM-MobileNetV2 + KD. En términos de eficiencia, mantuvieron tiempos de inferencia por debajo de 20 ms y redujeron el número de FLOPs en más del 85\% frente a I3D, validando su viabilidad para entornos de baja capacidad computacional.
+    
+    \item \textbf{Comparación con modelos base y análisis cualitativo:} El análisis cruzado evidenció una mejor capacidad de generalización de los modelos distilados. Visualmente, los mapas de atención mostraron una mayor focalización en regiones relevantes, mientras que los errores más frecuentes se asociaron a secuencias con condiciones visuales atípicas o escasa representación en los datos de entrenamiento.
+\end{itemize}
+
+\noindent \textbf{Conclusión general:}  
+La presente tesis demuestra que es posible optimizar modelos de Action Quality Assessment mediante una estrategia de distilación de conocimiento adaptada a la estructura espacio-temporal de videos. La transferencia efectiva desde un modelo Teacher complejo (I3D) hacia arquitecturas Student livianas (TSM-MobileNetV2 y MobileNetV3) logra preservar el rendimiento predictivo mientras se reducen drásticamente los requerimientos computacionales. Estos hallazgos abren la puerta al despliegue de soluciones AQA precisas y eficientes en contextos reales con recursos limitados.
+
+\section{Problemas encontrados}
+
+Durante el desarrollo de esta investigación se identificaron diversos desafíos que podrían ser de utilidad para futuros trabajos en esta línea:
+
+\begin{itemize}
+    \item \textbf{Desbalance de clases y distribución de etiquetas:} Los datasets empleados presentan concentraciones de ejemplos en rangos medios de puntuación, dificultando el aprendizaje de ejecuciones excepcionales (muy buenas o muy malas). Esto afectó la capacidad del modelo para distinguir los extremos del espectro de calidad.
+    
+    \item \textbf{Variabilidad en las condiciones visuales:} Se observaron casos con iluminación deficiente, ángulos de cámara extremos o ruido visual, lo que afectó tanto la predicción como la interpretabilidad de los mapas de atención generados.
+    
+    \item \textbf{Limitaciones del hardware de entrenamiento:} La ejecución de modelos 3D (como I3D) y el cálculo de distancias entre representaciones internas implicaron una alta demanda de memoria. Esto obligó a reducir tamaños de batch y emplear técnicas como gradiente acumulativo para mantener la estabilidad del entrenamiento.
+    
+    \item \textbf{Ausencia de benchmarks estandarizados para KD en AQA:} La falta de protocolos unificados en la literatura dificultó la comparación directa con trabajos previos, haciendo necesario definir un pipeline experimental propio.
+\end{itemize}
+
+\section{Recomendaciones}
+
+A partir del aprendizaje obtenido durante esta tesis, se sugieren las siguientes recomendaciones:
+
+\begin{itemize}
+    \item Al aplicar distilación en tareas de video, se recomienda no limitarse a la salida final del modelo, sino considerar también características intermedias y patrones de atención, lo cual enriquece la transferencia de conocimiento.
+    
+    \item Es aconsejable combinar distilación supervisada con estrategias de aumento de datos y técnicas de regularización, como dropout o normalización por capas, para mejorar la capacidad de generalización.
+    
+    \item Se recomienda utilizar herramientas de visualización como Grad-CAM no solo para análisis cualitativos, sino como guía para seleccionar mejores arquitecturas o detectar sesgos en los datos.
+    
+    \item Es importante realizar evaluaciones cruzadas entre dominios para verificar si el modelo ha aprendido representaciones verdaderamente generalizables o si depende demasiado del dominio de entrenamiento.
+\end{itemize}
+
+\section{Trabajos futuros}
+
+Con base en los hallazgos y limitaciones identificadas, se proponen las siguientes líneas de investigación futura:
+
+\begin{itemize}
+    \item \textbf{Distilación multimodal}: Investigar la transferencia de conocimiento desde modelos que integren modalidades adicionales (como texto, audio o pose 3D) hacia estudiantes unimodales (RGB), para capturar información semántica rica sin aumentar la complejidad en inferencia.
+    
+    \item \textbf{Distilación auto-supervisada}: Explorar el uso de auto-distilación con supervisión jerárquica en modelos livianos, lo que podría reducir la dependencia de un modelo Teacher y hacer más accesible el entrenamiento.
+    
+    \item \textbf{Implementación en dispositivos reales}: Validar los modelos distilados en plataformas embebidas (p.ej. Jetson Nano, Raspberry Pi), midiendo su desempeño en condiciones reales de ejecución, incluyendo consumo energético, latencia y estabilidad.
+    
+    \item \textbf{Aplicación en nuevos dominios}: Ampliar la evaluación a contextos fuera del deporte, como la rehabilitación física o la educación, para comprobar la robustez del enfoque propuesto en diferentes entornos.
+    
+    \item \textbf{Análisis explicable de decisiones}: Integrar técnicas de interpretabilidad que permitan entender mejor por qué un modelo predice cierta puntuación, facilitando su adopción en entornos sensibles como el análisis clínico o el juicio técnico profesional.
+\end{itemize}
+
