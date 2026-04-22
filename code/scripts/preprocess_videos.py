@@ -37,36 +37,16 @@ def _load_annotations(dataset: str, raw_dir: Path) -> pd.DataFrame:
         # video_path ya viene como ruta absoluta al .avi (o a un dir de frames)
         return df
 
-    if dataset == "mtl_aqa":
-        ann = raw_dir / "annotations.json"
-        if not ann.exists():
-            raise FileNotFoundError(f"No existe {ann}")
-        with open(ann, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        frames_dir = raw_dir / "frames"
-        rows = []
-        for clip_id, meta in data.items():
-            rows.append({
-                "clip_id": clip_id,
-                "video_path": str(frames_dir / clip_id),
-                "raw_score": float(meta["final_score"]),
-                "category": "diving",
-            })
-        return pd.DataFrame(rows)
-
-    if dataset == "jigsaws":
+    if dataset in ("mtl_aqa", "jigsaws"):
         scores_csv = raw_dir / "scores.csv"
         if not scores_csv.exists():
             raise FileNotFoundError(
-                f"No existe {scores_csv}. Usar scripts/jigsaws_scores_from_meta.py "
-                "para convertir las etiquetas OSATS del paquete JIGSAWS."
+                f"No existe {scores_csv}. Ejecutar build_{dataset}_annotations.py primero."
             )
-        df = pd.read_csv(scores_csv)  # columnas: clip_id, task, score
-        frames_dir = raw_dir / "frames"
-        df = df.rename(columns={"score": "raw_score", "task": "category"})
-        df["video_path"] = df.apply(
-            lambda r: str(frames_dir / r["category"] / str(r["clip_id"])), axis=1
-        )
+        df = pd.read_csv(scores_csv)
+        # CSV ya trae: clip_id, category, raw_score (o score_raw), score, split, video_path
+        if "score_raw" in df.columns and "raw_score" not in df.columns:
+            df = df.rename(columns={"score_raw": "raw_score"})
         return df
 
     raise ValueError(f"Dataset desconocido: {dataset}")
