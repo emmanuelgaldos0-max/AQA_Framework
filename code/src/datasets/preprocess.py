@@ -22,15 +22,61 @@ KINETICS_MEAN = torch.tensor([0.43216, 0.394666, 0.37645]).view(3, 1, 1, 1)
 KINETICS_STD = torch.tensor([0.22803, 0.22145, 0.216989]).view(3, 1, 1, 1)
 
 
-def read_video(path: str | Path, target_fps: int = 25) -> torch.Tensor:
-    """Devuelve frames como tensor uint8 [T, H, W, 3] en RGB."""
-    path = str(path)
-    if _HAS_DECORD:
+VIDEO_EXTS = {".mp4", ".avi", ".mov", ".mkv", ".webm", ".flv"}
+IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".bmp"}
+
+
+def _is_video_file(path: Path) -> bool:
+    return path.suffix.lower() in VIDEO_EXTS
+
+
+def _natural_key(p: Path):
+    """Ordena 'frame_10' después de 'frame_2'."""
+    import re
+    parts = re.findall(r"\d+|\D+", p.name)
+    return [int(x) if x.isdigit() else x for x in parts]
+
+
+def read_frames_dir(dir_path: Path, target_fps: int = 25, src_fps: int = 30) -> torch.Tensor:
+    """Lee un directorio de imágenes ordenadas y las apila como [T, H, W, 3] uint8.
+
+    Si el directorio tiene más FPS que target_fps, submuestrea uniformemente.
+    """
+    dir_path = Path(dir_path)
+    files = sorted(
+        [p for p in dir_path.iterdir() if p.suffix.lower() in IMAGE_EXTS],
+        key=_natural_key,
+    )
+    if not files:
+        raise FileNotFoundError(f"No hay frames en {dir_path}")
+
+    step = max(1, int(round(src_fps / target_fps)))
+    files = files[::step]
+
+    frames = []
+    for f in files:
+        img = cv2.imread(str(f), cv2.IMREAD_COLOR)
+        if img is None:
+            continue
+        frames.append(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    if not frames:
+        raise ValueError(f"Ningún frame legible en {dir_path}")
+    return torch.from_numpy(np.stack(frames))
+
+
+def read_video(path: str | Path, target_fps: int = 25, src_fps: int = 30) -> torch.Tensor:
+    """Lee video de archivo O directorio de frames. Devuelve [T, H, W, 3] uint8 RGB."""
+    p = Path(path)
+    if p.is_dir():
+        return read_frames_dir(p, target_fps=target_fps, src_fps=src_fps)
+
+    path = str(p)
+    if _HAS_DECORD and _is_video_file(p):
         vr = decord.VideoReader(path, num_threads=1)
         orig_fps = vr.get_avg_fps()
         step = max(1, int(round(orig_fps / target_fps)))
         idx = list(range(0, len(vr), step))
-        frames = vr.get_batch(idx)  # torch tensor [T, H, W, 3]
+        frames = vr.get_batch(idx)
         if not isinstance(frames, torch.Tensor):
             frames = torch.from_numpy(frames.asnumpy())
         return frames
@@ -91,11 +137,12 @@ def preprocess_video(
     clip_length: Optional[int] = None,
     frame_size: int = 224,
     target_fps: int = 25,
+    src_fps: int = 30,
 ) -> Tuple[int, int]:
-    """Lee video, normaliza y guarda como .pt float16. Devuelve (T_final, H=W=frame_size)."""
-    frames = read_video(input_path, target_fps=target_fps)    # [T, H, W, 3] uint8
-    frames = resize_clip(frames, size=frame_size)              # [T, s, s, 3]
-    clip = to_normalized_tensor(frames)                        # [3, T, s, s] float32
+    """Lee video (archivo o dir de frames), normaliza y guarda como .pt float16."""
+    frames = read_video(input_path, target_fps=target_fps, src_fps=src_fps)
+    frames = resize_clip(frames, size=frame_size)
+    clip = to_normalized_tensor(frames)
     if clip_length is not None:
         clip = pad_or_trim_temporal(clip, clip_length)
     output_path = Path(output_path)

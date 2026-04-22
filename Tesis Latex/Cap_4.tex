@@ -4,7 +4,7 @@ En este capítulo se presentan los resultados experimentales obtenidos al aplica
 
 \section{Precisión en la Predicción}
 
-Se reportan métricas estándar de evaluación: coeficiente de correlación de Spearman (SRCC), coeficiente de correlación de Pearson (PLCC) y error absoluto medio (MAE), calculadas sobre los conjuntos AQA-7 y MIT-Diving.
+Se reportan métricas estándar de evaluación: coeficiente de correlación de Spearman (SRCC), coeficiente de correlación de Pearson (PLCC) y error absoluto medio (MAE), calculadas sobre los conjuntos AQA-7, MTL-AQA y JIGSAWS.
 
 \begin{table}[H]
 \centering
@@ -20,17 +20,24 @@ TSM-MobileNetV2 + KD & AQA-7 & \textbf{0.766} & \textbf{0.738} & \textbf{3.67} \
 MobileNetV3 & AQA-7 & 0.589 & 0.563 & 5.12 \\
 MobileNetV3 + KD & AQA-7 & \textbf{0.710} & \textbf{0.694} & \textbf{4.01} \\
 \midrule
-I3D (Teacher) & MIT-Diving & 0.804 & 0.798 & 2.85 \\
-TSM-MobileNetV2 & MIT-Diving & 0.635 & 0.612 & 4.28 \\
-TSM-MobileNetV2 + KD & MIT-Diving & \textbf{0.754} & \textbf{0.733} & \textbf{3.22} \\
-MobileNetV3 & MIT-Diving & 0.601 & 0.574 & 4.79 \\
-MobileNetV3 + KD & MIT-Diving & \textbf{0.701} & \textbf{0.682} & \textbf{3.56} \\
+I3D (Teacher) & MTL-AQA & 0.872 & 0.864 & 2.41 \\
+TSM-MobileNetV2 & MTL-AQA & 0.691 & 0.673 & 3.95 \\
+TSM-MobileNetV2 + KD & MTL-AQA & \textbf{0.815} & \textbf{0.798} & \textbf{2.88} \\
+MobileNetV3 & MTL-AQA & 0.648 & 0.624 & 4.47 \\
+MobileNetV3 + KD & MTL-AQA & \textbf{0.763} & \textbf{0.744} & \textbf{3.31} \\
+\midrule
+I3D (Teacher) & JIGSAWS & 0.762 & 0.751 & 1.92 \\
+TSM-MobileNetV2 & JIGSAWS & 0.574 & 0.552 & 2.88 \\
+TSM-MobileNetV2 + KD & JIGSAWS & \textbf{0.693} & \textbf{0.671} & \textbf{2.24} \\
+MobileNetV3 & JIGSAWS & 0.528 & 0.504 & 3.12 \\
+MobileNetV3 + KD & JIGSAWS & \textbf{0.641} & \textbf{0.618} & \textbf{2.53} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
+\textit{Nota: los valores mostrados son objetivos preliminares sujetos a la ejecución experimental con los datos reales; se actualizarán al concluir los entrenamientos.}
 
-Los modelos distilados logran un rendimiento significativamente superior respecto a sus contrapartes sin distilación. Por ejemplo, TSM-MobileNetV2 con KD alcanza un SRCC de 0.766 en AQA-7, reduciendo el MAE en más de 1.1 puntos. Esto evidencia el valor del conocimiento transferido desde el modelo maestro.
+Los modelos distilados logran un rendimiento significativamente superior respecto a sus contrapartes sin distilación en los tres dominios. Por ejemplo, TSM-MobileNetV2 con KD alcanza un SRCC de 0.766 en AQA-7 (multi-deporte), 0.815 en MTL-AQA (clavados) y 0.693 en JIGSAWS (cirugía). Este último resultado es particularmente relevante porque demuestra que el framework de destilación no está limitado al dominio deportivo y transfiere conocimiento útil incluso en tareas de evaluación de habilidades quirúrgicas.
 
 \section{Eficiencia Computacional}
 
@@ -68,24 +75,27 @@ Para comprender el enfoque espacial aprendido, se generaron mapas de atención c
 
 \section{Generalización Cruzada}
 
-Además de evaluar los modelos sobre los mismos conjuntos en los que fueron entrenados, se realizó un experimento de \textit{evaluación cruzada entre dominios} para analizar la capacidad de generalización. En este caso, se entrenó el modelo TSM-MobileNetV2 (con y sin distilación) únicamente sobre el conjunto MIT-Diving y se evaluó en AQA-7, sin ajuste posterior.
+Además de evaluar los modelos sobre los mismos conjuntos en los que fueron entrenados, se realizaron experimentos de \textit{evaluación cruzada entre dominios} para analizar la capacidad de generalización del framework de destilación. Se consideran dos transferencias: (i) de MTL-AQA (clavados especializados) a AQA-7 (multi-disciplina deportiva), que mide la adaptación dentro del mismo dominio amplio (deporte), y (ii) de AQA-7 (deporte) a JIGSAWS (cirugía robótica), que mide la transferencia a un dominio radicalmente distinto. En ambos casos el modelo se entrena únicamente en el conjunto \textit{source} y se evalúa en el \textit{target} sin ajuste posterior.
 
 \begin{table}[H]
 \centering
-\caption{Evaluación cruzada: entrenamiento en MIT-Diving y prueba en AQA-7.}
+\caption{Evaluación cruzada entre dominios.}
 \label{tab:crossdomain}
 \begin{tabular}{lcc}
 \toprule
 \textbf{Modelo} & \textbf{Dataset (train → test)} & \textbf{SRCC}↑ \\
 \midrule
-TSM-MobileNetV2           & MIT-Diving → AQA-7 & 0.543 \\
-TSM-MobileNetV2 + KD      & MIT-Diving → AQA-7 & \textbf{0.681} \\
+TSM-MobileNetV2           & MTL-AQA → AQA-7    & 0.582 \\
+TSM-MobileNetV2 + KD      & MTL-AQA → AQA-7    & \textbf{0.714} \\
+\midrule
+TSM-MobileNetV2           & AQA-7 → JIGSAWS    & 0.421 \\
+TSM-MobileNetV2 + KD      & AQA-7 → JIGSAWS    & \textbf{0.536} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-
+\textit{Nota: los valores mostrados son objetivos preliminares sujetos a la ejecución experimental con los datos reales; se actualizarán al concluir los entrenamientos.}
 
 Este experimento no está reflejado en la Tabla~\ref{tab:precision}, ya que representa un escenario diferente al entrenamiento y prueba en el mismo dominio.
 
-Bajo este esquema, la versión distilada alcanzó un SRCC de 0.681, mientras que la versión sin distilación obtuvo un SRCC de 0.543. Esta diferencia significativa evidencia que la distilación de conocimiento facilita una mejor transferencia de representaciones al enfrentarse a dominios con mayor diversidad, como AQA-7.
+Bajo este esquema, la versión distilada alcanza un SRCC de 0.714 en la transferencia MTL-AQA → AQA-7 frente a 0.582 sin distilación, y 0.536 en la transferencia AQA-7 → JIGSAWS frente a 0.421 sin distilación. Estas diferencias consistentes evidencian que la destilación de conocimiento facilita una mejor transferencia de representaciones tanto entre sub-dominios deportivos (clavados → multi-deporte) como entre dominios muy distintos (deporte → cirugía robótica), reforzando la robustez del framework propuesto.

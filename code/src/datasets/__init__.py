@@ -2,10 +2,6 @@ from .base import AQABaseDataset, Sample
 from .transforms import VideoTransform
 
 
-class MITDivingDataset(AQABaseDataset):
-    name = "mit_diving"
-
-
 class AQA7Dataset(AQABaseDataset):
     name = "aqa7"
 
@@ -14,10 +10,14 @@ class MTLAQADataset(AQABaseDataset):
     name = "mtl_aqa"
 
 
+class JIGSAWSDataset(AQABaseDataset):
+    name = "jigsaws"
+
+
 DATASET_REGISTRY = {
-    "mit_diving": MITDivingDataset,
     "aqa7": AQA7Dataset,
     "mtl_aqa": MTLAQADataset,
+    "jigsaws": JIGSAWSDataset,
 }
 
 
@@ -34,9 +34,9 @@ __all__ = [
     "AQABaseDataset",
     "Sample",
     "VideoTransform",
-    "MITDivingDataset",
     "AQA7Dataset",
     "MTLAQADataset",
+    "JIGSAWSDataset",
     "DATASET_REGISTRY",
     "build_dataset",
 ]

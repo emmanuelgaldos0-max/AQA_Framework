@@ -4,6 +4,12 @@ PLAN_DESARROLLO.md
 # Herramientas de Claude
 .claude/
 
+# Datasets crudos (no versionar: pesados y con licencia)
+Datasets/
+code/data/raw/
+code/data/preprocessed/
+code/data/splits/
+
 # LaTeX build artifacts
 *.aux
 *.bbl

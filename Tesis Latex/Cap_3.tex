@@ -88,33 +88,24 @@ Cada modelo Student será entrenado bajo el esquema de distilación propuesto, r
 
 Se emplearon tres conjuntos de datos ampliamente utilizados en la tarea de \textit{Action Quality Assessment} (AQA). Cada uno posee características distintas en cuanto a dominio, número de muestras, estructura y tipo de anotaciones. A continuación se detallan:
 
+Los tres conjuntos son distribuidos como \textit{frames} pre-extraídos en directorios (no como archivos de video), lo cual simplifica el pipeline de preprocesamiento al eliminar la dependencia de decodificadores de video y permitir un acceso directo por frame.
+
 \begin{itemize}
-    \item \textbf{MIT-Diving}:
-        \begin{itemize}
-            \item \textbf{Cantidad de videos}: 370 clips de clavados olímpicos desde plataforma de 10 metros.
-            \item \textbf{Duración promedio por video}: 3.2 segundos.
-            \item \textbf{Resolución promedio}: 480p (algunos videos con compresión alta).
-            \item \textbf{Peso total del dataset}: Aproximadamente 1.2 GB.
-            \item \textbf{Anotaciones}: Cada video contiene una puntuación única en el rango $[0, 100]$ proporcionada por jueces expertos, considerando técnica, entrada al agua y estética.
-            \item \textbf{Formato de los videos}: .avi.
-            \item \textbf{Observaciones}: Algunos videos presentan condiciones adversas de iluminación y variabilidad de ángulos de cámara, lo cual incrementa la dificultad de la tarea.
-        \end{itemize}
-    
     \item \textbf{AQA-7}:
         \begin{itemize}
-            \item \textbf{Cantidad de videos}: 1,189 muestras distribuidas en 7 disciplinas deportivas distintas: clavados, gimnasia artística, salto con pértiga, esquí estilo libre, patinaje artístico, patinaje en línea y snowboard.
-            \item \textbf{Duración promedio por video}: 5 a 8 segundos.
+            \item \textbf{Cantidad de muestras}: 1,189 clips distribuidos en 7 disciplinas deportivas distintas: clavados, gimnasia artística, salto con pértiga, esquí estilo libre, patinaje artístico, patinaje en línea y snowboard.
+            \item \textbf{Duración promedio por clip}: 5 a 8 segundos.
             \item \textbf{Resolución promedio}: 720p.
             \item \textbf{Peso total del dataset}: Aproximadamente 3.6 GB.
             \item \textbf{Anotaciones}: Etiquetas de puntuación continua específicas para cada disciplina, normalmente en rangos de 0 a 100. Se evalúan mediante métricas SRCC, PLCC y MAE.
-            \item \textbf{Formato de los videos}: .avi.
-            \item \textbf{Ventaja}: Amplia diversidad inter-acción, lo que permite evaluar la capacidad de generalización del modelo frente a distintas dinámicas temporales y visuales.
+            \item \textbf{Formato}: directorios con frames en .jpg ordenados por índice temporal.
+            \item \textbf{Rol en la tesis}: dataset principal multi-disciplina; soporte de la Tabla de resultados principal y punto central de la generalización cruzada.
         \end{itemize}
 
     \item \textbf{MTL-AQA}:
         \begin{itemize}
-            \item \textbf{Cantidad de videos}: 1,412 clips de clavados desde trampolín y plataforma.
-            \item \textbf{Duración promedio por video}: 3.5 segundos.
+            \item \textbf{Cantidad de muestras}: 1,412 clips de clavados desde trampolín y plataforma.
+            \item \textbf{Duración promedio por clip}: 3.5 segundos.
             \item \textbf{Resolución promedio}: 720p.
             \item \textbf{Peso total del dataset}: Aproximadamente 2.8 GB.
             \item \textbf{Anotaciones}: Etiquetas multitarea, que incluyen:
@@ -122,8 +113,19 @@ Se emplearon tres conjuntos de datos ampliamente utilizados en la tarea de \text
                     \item Puntuación global de ejecución.
                     \item Subcomponentes como altura, rotación, entrada al agua, postura y sincronización.
                 \end{itemize}
-            \item \textbf{Formato de los videos}: .avi.
-            \item \textbf{Relevancia}: Permite diseñar estrategias de distilación jerárquica al transferir conocimiento desde etiquetas intermedias hacia una salida final más precisa.
+            \item \textbf{Formato}: directorios con frames en .jpg.
+            \item \textbf{Rol en la tesis}: corpus especializado en clavados para entrenar variantes del \textit{Teacher} con etiquetas densas; también se utiliza como fuente en el experimento de generalización cruzada (entrenamiento en MTL-AQA, evaluación en AQA-7).
+        \end{itemize}
+
+    \item \textbf{JIGSAWS}:
+        \begin{itemize}
+            \item \textbf{Cantidad de muestras}: 103 ejecuciones de tres tareas quirúrgicas básicas (suturas, paso de aguja y anudado de nudos) realizadas en el sistema robótico \textit{da Vinci}.
+            \item \textbf{Duración promedio por clip}: 1 a 2 minutos, recortada por gesto a ventanas de 5 a 8 segundos para AQA.
+            \item \textbf{Resolución promedio}: 640$\times$480.
+            \item \textbf{Peso total del dataset}: Aproximadamente 1.5 GB en formato frames.
+            \item \textbf{Anotaciones}: puntuaciones OSATS (\textit{Objective Structured Assessment of Technical Skills}) en el rango $[6, 30]$, además de etiquetas de expertise (\textit{novice}, \textit{intermediate}, \textit{expert}).
+            \item \textbf{Formato}: directorios con frames en .jpg.
+            \item \textbf{Rol en la tesis}: dataset fuera del dominio deportivo que amplía la evaluación del \textit{framework} de destilación al campo de la cirugía robótica, permitiendo verificar la robustez cross-dominio del modelo destilado.
         \end{itemize}
 \end{itemize}
 
@@ -174,7 +176,7 @@ El pipeline de preprocesamiento se divide en cuatro etapas:
 
 \subsection{Consideraciones técnicas}
 \begin{itemize}
-    \item \textbf{Balanceo}: Para datasets con distribución sesgada (ej.: MIT-Diving con mayoría de puntuaciones medias), se aplica muestreo estratificado durante el entrenamiento.
+    \item \textbf{Balanceo}: Para datasets con distribución sesgada (ej.: MTL-AQA con mayoría de puntuaciones medias, o JIGSAWS con clases desbalanceadas entre niveles de expertise), se aplica muestreo estratificado durante el entrenamiento.
     \item \textbf{División}: 70\% entrenamiento, 15\% validación, 15\% prueba (conservando proporciones por categoría en AQA-7).
     \item \textbf{Reproducibilidad}: Semillas fijas para \textit{random cropping} y shuffling.
 \end{itemize}
@@ -264,7 +266,7 @@ Estas métricas permiten evaluar no solo la precisión, sino también la factibi
 \begin{itemize}
     \item \textbf{Mapas de Atención}: Visualización de las regiones espaciotemporales consideradas críticas por los modelos, usando Grad-CAM.
 
-    \item \textbf{Evaluación Cruzada}: Entrenamiento en un dominio (ej.: MIT-Diving) y prueba en otro (ej.: AQA-7) para medir generalización.
+    \item \textbf{Evaluación Cruzada}: Entrenamiento en un dominio (ej.: MTL-AQA, clavados) y prueba en otro (ej.: AQA-7, multi-deporte; o JIGSAWS, cirugía robótica) para medir generalización.
 
     \item \textbf{Benchmark de Hardware}: Medición de FLOPs y latencia en dispositivos embebidos (NVIDIA Jetson Nano).
 \end{itemize}

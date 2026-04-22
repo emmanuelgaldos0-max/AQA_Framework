@@ -1,108 +1,98 @@
 #!/usr/bin/env bash
 #
-# Descarga los datasets de AQA (MIT-Diving, AQA-7, MTL-AQA).
+# Descarga los datasets de AQA utilizados en la tesis.
 #
-# Los enlaces "oficiales" de estos datasets son histó­ricamente inestables:
-# MIT-Diving vive en la página del autor (Pirsiavash, MIT CSAIL); AQA-7 y
-# MTL-AQA viven en Google Drive gestionados por Paritosh Parmar.
+# Los tres datasets vienen como directorios de frames pre-extraídos
+# (no archivos de video).
 #
-# Requisitos: wget, gdown (pip install gdown).
+# Requisitos: gdown (pip install gdown) y acceso interactivo a los repos
+# oficiales para aceptar términos.
 #
 # Uso:
-#   bash scripts/download_datasets.sh mit_diving
 #   bash scripts/download_datasets.sh aqa7
 #   bash scripts/download_datasets.sh mtl_aqa
+#   bash scripts/download_datasets.sh jigsaws
 #   bash scripts/download_datasets.sh all
-#
-# Las URLs de Drive pueden caducar. Si alguna falla, verifica en:
-#   https://github.com/ParitoshParmar/MTL-AQA
-#   https://github.com/ParitoshParmar/Action-Quality-Assessment-AQA-7-
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 RAW="$ROOT/data/raw"
 
-mkdir -p "$RAW"/{mit_diving,aqa7,mtl_aqa}
+mkdir -p "$RAW"/{aqa7,mtl_aqa,jigsaws}
 
 TARGET="${1:-all}"
-
-download_mit_diving() {
-  local dir="$RAW/mit_diving"
-  echo "[MIT-Diving] → $dir"
-
-  # URL histórica del paper ECCV 2014 (Pirsiavash et al.).
-  # En la práctica suele venir como parte de MTL-AQA (diving subset).
-  # Estrategia: avisar y dejar al usuario que coloque los videos.
-  if [ ! -f "$dir/.downloaded" ]; then
-    cat <<EOF
-  ⚠  MIT-Diving no tiene enlace directo estable. Opciones:
-     1. Descargar desde el subset "diving" de MTL-AQA (bash scripts/download_datasets.sh mtl_aqa).
-     2. Contactar a Pirsiavash vía emmanuelgaldos0@gmail.com para el dataset original.
-     3. Buscar mirror en HuggingFace: huggingface.co/datasets (query "mit diving").
-
-  Cuando tengas los videos, colócalos en:
-     $dir/videos/
-  y las puntuaciones en:
-     $dir/scores.csv   (columnas: video_id,score)
-EOF
-  else
-    echo "  ya descargado (marcador .downloaded presente)"
-  fi
-}
 
 download_aqa7() {
   local dir="$RAW/aqa7"
   echo "[AQA-7] → $dir"
-
   if [ -f "$dir/.downloaded" ]; then
-    echo "  ya descargado"
-    return 0
+    echo "  ya descargado"; return 0
   fi
-
-  # ID de Google Drive del archivo oficial según README de Parmar.
-  # Si este ID cambia, actualizar en https://github.com/ParitoshParmar/Action-Quality-Assessment-AQA-7-
-  local drive_id="1yfNVHk2a-o1dsA_bIhk2s0sRJRzs6tHy"
-  pushd "$dir" > /dev/null
-  "$ROOT/.venv/bin/gdown" --id "$drive_id" -O AQA-7.zip || {
-    echo "  ❌ gdown falló. Verifica el ID en el repo oficial o usa el navegador."
-    popd > /dev/null
-    return 1
-  }
-  unzip -q AQA-7.zip && rm AQA-7.zip
-  touch .downloaded
-  popd > /dev/null
+  cat <<EOF
+  Instrucciones:
+    1. Ir a https://github.com/ParitoshParmar/Action-Quality-Assessment-AQA-7-
+    2. Seguir el link de Google Drive con los frames pre-extraídos
+    3. Descomprimir en:
+         $dir/frames/<category>/<clip_id>/frame_00001.jpg ...
+    4. Colocar el CSV de scores en:
+         $dir/scores.csv   (columnas: clip_id, category, score)
+    5. Crear el marcador:
+         touch $dir/.downloaded
+EOF
 }
 
 download_mtl_aqa() {
   local dir="$RAW/mtl_aqa"
   echo "[MTL-AQA] → $dir"
-
   if [ -f "$dir/.downloaded" ]; then
-    echo "  ya descargado"
-    return 0
+    echo "  ya descargado"; return 0
   fi
+  cat <<EOF
+  Instrucciones:
+    1. Ir a https://github.com/ParitoshParmar/MTL-AQA
+    2. Descargar el pack de frames pre-extraídos desde Google Drive
+    3. Descomprimir en:
+         $dir/frames/<clip_id>/frame_00001.jpg ...
+    4. Colocar las anotaciones en:
+         $dir/annotations.json   (por clip_id → {final_score, subscores...})
+    5. Crear el marcador:
+         touch $dir/.downloaded
+EOF
+}
 
-  # Repo: github.com/ParitoshParmar/MTL-AQA
-  # El README indica un Drive folder. ID a confirmar cuando se ejecute.
-  echo "  ⚠  MTL-AQA requiere aceptar los términos en el README del repo."
-  echo "     Ir a: https://github.com/ParitoshParmar/MTL-AQA"
-  echo "     Seguir las instrucciones de descarga."
-  echo "     Colocar los videos en: $dir/videos/"
-  echo "     Anotaciones en: $dir/annotations.json"
+download_jigsaws() {
+  local dir="$RAW/jigsaws"
+  echo "[JIGSAWS] → $dir"
+  if [ -f "$dir/.downloaded" ]; then
+    echo "  ya descargado"; return 0
+  fi
+  cat <<EOF
+  Instrucciones:
+    1. Solicitar acceso en: https://cirl.lcsr.jhu.edu/research/hmm/datasets/jigsaws_release/
+    2. Aceptar los términos y descargar los .zip de Suturing, Needle_Passing y Knot_Tying
+    3. Descomprimir en:
+         $dir/frames/<task>/<clip_id>/frame_00001.jpg ...
+       (las distribuciones oficiales traen frames en carpetas por trial)
+    4. Convertir las etiquetas OSATS a CSV:
+         $dir/scores.csv   (columnas: clip_id, task, score)
+       (puntuación global = suma de los 6 items OSATS, rango 6..30)
+    5. Crear el marcador:
+         touch $dir/.downloaded
+EOF
 }
 
 case "$TARGET" in
-  mit_diving) download_mit_diving ;;
-  aqa7)       download_aqa7 ;;
-  mtl_aqa)    download_mtl_aqa ;;
+  aqa7)    download_aqa7 ;;
+  mtl_aqa) download_mtl_aqa ;;
+  jigsaws) download_jigsaws ;;
   all)
-    download_mit_diving || true
     download_aqa7 || true
     download_mtl_aqa || true
+    download_jigsaws || true
     ;;
   *)
-    echo "Uso: $0 {mit_diving|aqa7|mtl_aqa|all}"
+    echo "Uso: $0 {aqa7|mtl_aqa|jigsaws|all}"
     exit 1
     ;;
 esac
