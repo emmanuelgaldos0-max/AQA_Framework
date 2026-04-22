@@ -30,14 +30,11 @@ def _load_annotations(dataset: str, raw_dir: Path) -> pd.DataFrame:
         scores_csv = raw_dir / "scores.csv"
         if not scores_csv.exists():
             raise FileNotFoundError(
-                f"No existe {scores_csv}. Generar desde el .mat oficial con un script auxiliar."
+                f"No existe {scores_csv}. Ejecutar scripts/build_aqa7_annotations.py primero."
             )
-        df = pd.read_csv(scores_csv)  # columnas: clip_id, category, score
-        frames_dir = raw_dir / "frames"
+        df = pd.read_csv(scores_csv)  # clip_id, category, score, split, video_path
         df = df.rename(columns={"score": "raw_score"})
-        df["video_path"] = df.apply(
-            lambda r: str(frames_dir / r["category"] / str(r["clip_id"])), axis=1
-        )
+        # video_path ya viene como ruta absoluta al .avi (o a un dir de frames)
         return df
 
     if dataset == "mtl_aqa":
