@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
-# Entrena los 6 baselines + 18 KD runs (24 total) con los Teachers ya
-# entrenados en experiments/<dataset>_i3d_seed42/best.pth.
-#
-# Configs ajustados a batch=2 + grad_accum=8 para Students y batch=1 +
-# grad_accum=16 para KD, requeridos por los 6 GB de la RTX 3060 con T=64.
+# Entrena los 6 Students+KD (2 arq × 3 datasets × 1 semilla=42).
+# Los baselines y Teachers ya están entrenados.
 
 set -u
 cd "$(dirname "$0")/.."
@@ -20,19 +17,6 @@ run() {
     echo "[$(date)] OK: $desc"
 }
 
-# ---------- Students baseline ----------
-for ds in aqa7 mtl_aqa jigsaws; do
-    for cfg in student_tsm_mbv2 student_mbv3; do
-        run "Student baseline $cfg $ds" \
-            $PY -m src.main \
-                --config configs/${cfg}.yaml \
-                --dataset $ds \
-                --seed $SEED \
-                --run_name "${ds}_${cfg}_baseline_seed${SEED}"
-    done
-done
-
-# ---------- Students + KD (1 semilla 42, decidido por limitación de tiempo) ----------
 for ds in aqa7 mtl_aqa jigsaws; do
     TEACHER_CKPT="experiments/${ds}_i3d_seed${SEED}/best.pth"
     for student in tsm_mobilenetv2 mobilenetv3_large; do
@@ -49,5 +33,5 @@ done
 
 echo ""
 echo "============================================================"
-echo "[$(date)] Students + KD pipeline COMPLETO."
+echo "[$(date)] KD pipeline COMPLETO (6 runs, 1 semilla)."
 echo "============================================================"
