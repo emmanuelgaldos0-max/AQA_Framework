@@ -1,0 +1,5 @@
+extends: kd.yaml
+
+train:
+  epochs: 3
+  early_stop_patience: 99

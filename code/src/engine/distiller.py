@@ -40,10 +40,28 @@ class Distiller(Trainer):
         self.gamma = float(cfg["kd"]["gamma_temp"])
         self.att_mode = cfg["kd"].get("att_loss", "kl")
         self.warmup_epochs = int(cfg["kd"].get("warmup_epochs", 5))
+        self.freeze_bn = bool(cfg["kd"].get("freeze_bn", True))
 
     # ------------------------------------------------------------------
+    def _set_student_bn_eval(self):
+        """Congela estadísticos de BatchNorm del Student (running_mean/var)
+        pero mantiene weights entrenables. Necesario cuando batch_size es
+        muy pequeño (<4): con batch=1 o 2 las medias de lote son degenerativas
+        y destruyen las features pre-entrenadas en ImageNet."""
+        if not self.freeze_bn:
+            return
+        for m in self.model.modules():
+            if isinstance(m, (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d,
+                              nn.SyncBatchNorm)):
+                m.eval()
+
     def compute_loss(self, clips: torch.Tensor, targets: torch.Tensor,
                      epoch: int):
+        # BN del Student en eval (ver docstring de _set_student_bn_eval).
+        # Se llama en cada iteración porque Trainer.train_one_epoch() pone
+        # model.train() antes de este compute_loss.
+        self._set_student_bn_eval()
+
         # Teacher forward (congelado, AMP OK)
         with torch.no_grad():
             _ = self.teacher(clips)
