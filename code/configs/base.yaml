@@ -1,0 +1,27 @@
+seed: 42
+device: cuda
+amp: true
+num_workers: 8
+
+data:
+  clip_length: 64
+  clip_stride: 51
+  frame_size: 224
+  fps: 25
+  mean: [0.43216, 0.394666, 0.37645]
+  std:  [0.22803, 0.22145, 0.216989]
+  score_scale: 100.0
+
+train:
+  epochs: 50
+  optimizer: adamw
+  lr: 3.0e-4
+  weight_decay: 1.0e-4
+  scheduler: cosine
+  grad_clip: 1.0
+  early_stop_patience: 10
+  early_stop_metric: srcc
+
+logging:
+  interval: 20
+  checkpoint_dir: experiments

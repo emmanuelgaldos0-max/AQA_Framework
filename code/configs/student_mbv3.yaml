@@ -1,0 +1,10 @@
+extends: base.yaml
+
+model:
+  name: mobilenetv3_large
+  pretrained_on: imagenet
+  temporal_pool: avg
+
+train:
+  batch_size: 16
+  lr: 3.0e-4

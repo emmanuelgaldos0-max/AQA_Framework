@@ -1,0 +1,14 @@
+extends: base.yaml
+
+kd:
+  alpha_reg: 1.0
+  beta_att: 0.5
+  gamma_temp: 0.5
+  att_loss: kl            # "kl" o "mse"
+  temp_loss: mse
+  teacher_ckpt: experiments/teacher_i3d_best.pth
+  warmup_epochs: 5        # arranca con β=γ=0, sube linealmente
+
+train:
+  batch_size: 16
+  lr: 3.0e-4

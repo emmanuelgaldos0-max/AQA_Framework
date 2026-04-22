@@ -1,0 +1,10 @@
+extends: base.yaml
+
+model:
+  name: tsm_mobilenetv2
+  pretrained_on: imagenet
+  shift_div: 8
+
+train:
+  batch_size: 16
+  lr: 3.0e-4
