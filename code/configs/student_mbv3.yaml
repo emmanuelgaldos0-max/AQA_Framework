@@ -6,5 +6,6 @@ model:
   temporal_pool: avg
 
 train:
-  batch_size: 16
+  batch_size: 2
+  grad_accum_steps: 8     # batch efectivo = 16
   lr: 3.0e-4

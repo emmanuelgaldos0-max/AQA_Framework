@@ -1,0 +1,8 @@
+extends: teacher_i3d.yaml
+
+train:
+  epochs: 2                  # sanity-check rápido
+  batch_size: 2
+  grad_accum_steps: 4
+  lr: 1.0e-4
+  early_stop_patience: 99    # no cortar por patience en el smoke

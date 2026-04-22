@@ -1,0 +1,5 @@
+extends: student_tsm_mbv2.yaml
+
+train:
+  epochs: 2
+  early_stop_patience: 99

@@ -10,5 +10,6 @@ kd:
   warmup_epochs: 5        # arranca con β=γ=0, sube linealmente
 
 train:
-  batch_size: 16
+  batch_size: 1            # Student + Teacher a la vez en VRAM → muy apretado
+  grad_accum_steps: 16     # batch efectivo = 16
   lr: 3.0e-4
