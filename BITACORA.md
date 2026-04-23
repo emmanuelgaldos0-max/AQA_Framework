@@ -171,11 +171,27 @@ Target del plan vs. real:
 - **Intento de fix experimental:** `configs/kd_jigsaws.yaml` con `batch=2`, `grad_clip=0.5`, `warmup_epochs=8`, `β=γ=0.3`. **Resultado:** mejoró numéricamente (no más NaN) pero el KD sigue degradando: best SRCC=0.344 (epoch 1) vs baseline 0.828.
 - **Conclusión:** el KD propuesto **no funciona en JIGSAWS TSM-MBv2** con ningún ajuste razonable. El dataset chico (144 train) + arquitectura ya temporal (TSM) + pérdidas KD introducen demasiado ruido. Se acepta como resultado válido: evidencia empírica de que el framework tiene límites claros.
 
+### Cross-domain (Tabla 5.3) — completado
+
+| Transferencia | Arch | Baseline | KD | Δ (KD − baseline) |
+|---|---|---|---|---|
+| MTL-AQA → AQA-7 | TSM-MBv2 | 0.5294 | 0.4704 | −0.059 |
+| MTL-AQA → AQA-7 | MBv3 | 0.5531 | 0.5409 | −0.012 |
+| AQA-7 → JIGSAWS | TSM-MBv2 | −0.193 | −0.039 | +0.154 (ambos cercanos a 0) |
+| AQA-7 → JIGSAWS | MBv3 | 0.037 | −0.048 | − (aleatorio en ambos) |
+
+**Hallazgos cross-domain:**
+- **MTL-AQA → AQA-7 transfiere parcialmente** (SRCC 0.53-0.55): el dominio de clavados se generaliza razonablemente a multi-deporte.
+- **AQA-7 → JIGSAWS no transfiere** (SRCC cercano a 0 o negativo): la brecha de dominio deporte↔cirugía es demasiado grande para transferencia zero-shot.
+- **KD no ayuda a la generalización cross-domain** en ninguna configuración. En MTL-AQA→AQA-7 empeora ligeramente; en AQA-7→JIGSAWS ambos son aleatorios.
+- La transferencia deporte→cirugía **requiere fine-tuning** o destilación multimodal (vision-language) para ser factible.
+
 ### Pendientes de resultados
-- [ ] Añadir guard anti-NaN en Trainer/Distiller.
-- [ ] Re-run JIGSAWS TSM-MBv2 KD con fix.
-- [ ] Cross-domain (Tabla 5.3) — pendiente.
-- [ ] Grad-CAM — pendiente.
+- [x] Guard anti-NaN en Trainer.
+- [x] Re-run JIGSAWS TSM-MBv2 KD (confirmó que KD no funciona ahí).
+- [x] Cross-domain (Tabla 5.3).
+- [ ] Grad-CAM — en progreso.
+- [ ] Actualizar PDF con todos los números reales.
 
 ### Interpretación para la tesis
 
