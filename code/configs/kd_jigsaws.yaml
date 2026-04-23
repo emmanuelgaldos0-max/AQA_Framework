@@ -1,0 +1,19 @@
+# Config KD específico para JIGSAWS: dataset chico (144 train) + TSM inestable.
+# Ajustes respecto a kd.yaml:
+#   - batch_size 1→2 (cabe en 6GB VRAM porque los clips son similares)
+#   - grad_clip 1.0→0.5 (más conservador para evitar NaN)
+#   - warmup_epochs 5→8 (activar pérdidas KD más lentamente)
+#   - β y γ reducidos para suavizar interferencia
+extends: kd.yaml
+
+train:
+  batch_size: 2
+  grad_accum_steps: 8       # batch efectivo 16
+  grad_clip: 0.5
+
+kd:
+  alpha_reg: 1.0
+  beta_att: 0.3             # ↓ de 0.5
+  gamma_temp: 0.3           # ↓ de 0.5
+  warmup_epochs: 8          # ↑ de 5
+  freeze_bn: true

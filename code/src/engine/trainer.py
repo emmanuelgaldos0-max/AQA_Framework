@@ -94,6 +94,12 @@ class Trainer:
                 loss, parts, _ = self.compute_loss(clips, targets, epoch)
                 loss_scaled = loss / accum
 
+            # Guard anti-NaN: si la pérdida diverge, abortar training
+            if not torch.isfinite(loss):
+                print(f"[trainer] loss no finita (={loss.item()}) en epoch={epoch} "
+                      f"step={i}; abortando training.")
+                raise RuntimeError(f"Training divergió (loss={loss.item()})")
+
             self.scaler.scale(loss_scaled).backward()
 
             if (i + 1) % accum == 0:

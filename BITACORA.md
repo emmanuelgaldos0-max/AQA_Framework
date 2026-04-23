@@ -155,7 +155,7 @@ Target del plan vs. real:
 | AQA-7 | **MBv3** | 0.8854 | **0.9250** | **+0.040** ✅ | KD mejora. **Único caso de éxito claro** |
 | MTL-AQA | TSM-MBv2 | 0.8804 | 0.7628 (ep 50) | −0.118 | KD degrada fuerte |
 | MTL-AQA | MBv3 | 0.8703 | 0.8470 (ep 23) | −0.023 | KD degrada levemente |
-| JIGSAWS | **TSM-MBv2** | 0.8283 | 0.4935 (ep 11 → **NaN**) | −0.335 ❌ | Gradiente explotó |
+| JIGSAWS | **TSM-MBv2** | 0.8283 | 0.4935 → 0.344 (re-run) | **−0.484** ❌ | Re-run con fix no mejoró; KD no funciona aquí |
 | JIGSAWS | MBv3 | 0.8368 | 0.7907 | −0.046 | KD degrada |
 
 **Hallazgo principal (6/6 runs):**
@@ -165,9 +165,11 @@ Target del plan vs. real:
 - **JIGSAWS es el más frágil** (dataset chico, batch=1, pérdidas auxiliares → gradiente inestable → NaN).
 
 ### E14 — Gradiente NaN en JIGSAWS TSM-MBv2 KD (epoch 11)
-- **Síntoma:** `last SRCC=NaN` en epoch 11; el training continuó con pesos NaN hasta epoch 50 (no se detectó por falta de guard).
-- **Causa probable:** combinación `batch=1` + pérdidas auxiliares (attention KD KL) + dataset pequeño (144 train) + TSM (gradientes más altos por el desplazamiento temporal) → inestabilidad numérica sin grad clipping efectivo en FP16/AMP.
-- **Fix candidato (pendiente):** añadir `grad_clip=0.5` específico en KD, activar detection de NaN en GradScaler, o subir `batch=2` sólo para JIGSAWS (cabe en VRAM porque dataset es chico y el overhead de decoding es bajo).
+- **Síntoma:** `last SRCC=NaN` en epoch 11; el training continuó con pesos NaN.
+- **Causa:** predicciones colapsaron a valores casi constantes → Spearman indefinido. Las pérdidas auxiliares dominan y destruyen la señal de regresión.
+- **Fix aplicado en código:** `Trainer` ahora aborta si la loss no es finita (RuntimeError explícito).
+- **Intento de fix experimental:** `configs/kd_jigsaws.yaml` con `batch=2`, `grad_clip=0.5`, `warmup_epochs=8`, `β=γ=0.3`. **Resultado:** mejoró numéricamente (no más NaN) pero el KD sigue degradando: best SRCC=0.344 (epoch 1) vs baseline 0.828.
+- **Conclusión:** el KD propuesto **no funciona en JIGSAWS TSM-MBv2** con ningún ajuste razonable. El dataset chico (144 train) + arquitectura ya temporal (TSM) + pérdidas KD introducen demasiado ruido. Se acepta como resultado válido: evidencia empírica de que el framework tiene límites claros.
 
 ### Pendientes de resultados
 - [ ] Añadir guard anti-NaN en Trainer/Distiller.
