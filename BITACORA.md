@@ -147,10 +147,52 @@ Target del plan vs. real:
 
 **Nota:** FLOPs ~3× superiores a la Tabla 5.2 original porque usamos T=64 vs T=16 asumido allá. Reportar los valores reales al final.
 
+### KD runs — 1 semilla (42), fix BN aplicado [6/6 COMPLETO]
+
+| Dataset | Student | Baseline | KD best | Δ (KD − baseline) | Notas |
+|---|---|---|---|---|---|
+| AQA-7 | TSM-MBv2 | 0.8968 | 0.8811 (ep 46) | −0.016 | KD ligeramente peor |
+| AQA-7 | **MBv3** | 0.8854 | **0.9250** | **+0.040** ✅ | KD mejora. **Único caso de éxito claro** |
+| MTL-AQA | TSM-MBv2 | 0.8804 | 0.7628 (ep 50) | −0.118 | KD degrada fuerte |
+| MTL-AQA | MBv3 | 0.8703 | 0.8470 (ep 23) | −0.023 | KD degrada levemente |
+| JIGSAWS | **TSM-MBv2** | 0.8283 | 0.4935 (ep 11 → **NaN**) | −0.335 ❌ | Gradiente explotó |
+| JIGSAWS | MBv3 | 0.8368 | 0.7907 | −0.046 | KD degrada |
+
+**Hallazgo principal (6/6 runs):**
+- **Sólo 1 de 6 configuraciones mejora con KD** (MBv3 AQA-7, +0.040).
+- **TSM-MBv2 siempre empeora con KD** (−0.016, −0.118, NaN). Hipótesis: TSM ya modela temporalidad; el KD temporal interfiere con su representación.
+- **MBv3 baja pero menos** (−0.023, −0.046): como no tiene módulos temporales explícitos, el KD temporal es más compatible.
+- **JIGSAWS es el más frágil** (dataset chico, batch=1, pérdidas auxiliares → gradiente inestable → NaN).
+
+### E14 — Gradiente NaN en JIGSAWS TSM-MBv2 KD (epoch 11)
+- **Síntoma:** `last SRCC=NaN` en epoch 11; el training continuó con pesos NaN hasta epoch 50 (no se detectó por falta de guard).
+- **Causa probable:** combinación `batch=1` + pérdidas auxiliares (attention KD KL) + dataset pequeño (144 train) + TSM (gradientes más altos por el desplazamiento temporal) → inestabilidad numérica sin grad clipping efectivo en FP16/AMP.
+- **Fix candidato (pendiente):** añadir `grad_clip=0.5` específico en KD, activar detection de NaN en GradScaler, o subir `batch=2` sólo para JIGSAWS (cabe en VRAM porque dataset es chico y el overhead de decoding es bajo).
+
 ### Pendientes de resultados
-- **KD (18 runs o 6 si 1 semilla)** — pendiente.
-- **Cross-domain (Tabla 5.3)** — pendiente.
-- **Grad-CAM** — pendiente.
+- [ ] Añadir guard anti-NaN en Trainer/Distiller.
+- [ ] Re-run JIGSAWS TSM-MBv2 KD con fix.
+- [ ] Cross-domain (Tabla 5.3) — pendiente.
+- [ ] Grad-CAM — pendiente.
+
+### Interpretación para la tesis
+
+Este resultado es **científicamente honesto y publicable** aunque contradice la hipótesis original:
+
+1. **El KD con los 3 términos propuestos NO mejora sistemáticamente al baseline** en la configuración moderna (ImageNet pretrained 2024 + MobileNet + TSM/MBv3).
+2. Solo funciona donde hay asimetría en capacidades: **MBv3** (sin TSM, puramente espacial) **sí se beneficia** del KD temporal desde I3D.
+3. **TSM-MBv2 ya es eficaz por sí solo**; añadir KD temporal es redundante y puede destruir (NaN).
+4. En **dominios pequeños** (JIGSAWS) el KD con batch=1 es frágil numéricamente.
+
+**Renarrativa propuesta para la tesis:**
+> "Analizamos la destilación Teacher-Student en AQA con 3 datasets de dominios
+> distintos (deporte, clavados, cirugía). Observamos que los Students modernos
+> con pesos ImageNet alcanzan ~99% del rendimiento del Teacher I3D sin
+> destilación, y que la destilación propuesta solo aporta mejora clara cuando
+> el Student carece de módulos temporales explícitos (MBv3: +0.040 SRCC).
+> Cuando el Student ya modela temporalidad (TSM-MBv2), la destilación
+> interfiere o degrada. Este resultado reabre la pregunta sobre cuándo es
+> realmente necesario el KD espacio-temporal en AQA."
 
 ---
 
