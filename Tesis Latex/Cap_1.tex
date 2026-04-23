@@ -8,31 +8,47 @@ El interés por \ac{AQA} ha crecido sustancialmente debido a su potencial impact
 
 A pesar de estos beneficios potenciales, uno de los principales obstáculos para la adopción de sistemas de \ac{AQA} en escenarios reales radica en su elevada demanda computacional. Modelos de alto rendimiento, como los basados en arquitecturas tridimensionales profundas (por ejemplo, I3D), han demostrado una alta precisión al capturar patrones espacio-temporales complejos. Sin embargo, su tamaño y costo computacional los hacen inviables para aplicaciones que requieren baja latencia, eficiencia energética o procesamiento local. Esto pone en evidencia la necesidad urgente de soluciones más eficientes, capaces de ofrecer resultados competitivos sin depender de infraestructuras costosas o de alto consumo.
 
-En este contexto, arquitecturas livianas como \ac{TSM} y MobileNet-V3 se presentan como alternativas prometedoras. Estas redes son ampliamente utilizadas en entornos con recursos limitados debido a su eficiencia, facilidad de implementación y disponibilidad en plataformas como Google Colab o incluso dispositivos móviles. No obstante, cuando se entrenan desde cero en tareas complejas como \ac{AQA}, estas arquitecturas suelen mostrar una pérdida significativa de rendimiento en comparación con modelos más complejos.
+En este contexto, arquitecturas livianas como \ac{TSM} y MobileNet-V3 se presentan como alternativas prometedoras. Estas redes son ampliamente utilizadas en entornos con recursos limitados debido a su eficiencia, facilidad de implementación y disponibilidad en plataformas como Google Colab o dispositivos móviles. La literatura reciente \cite{Yu2021GroupAware, Zhou2023AQA_SD, Cai2023VisionLanguageAQA} ha reportado que estas arquitecturas, entrenadas desde cero, muestran una pérdida significativa de rendimiento en \ac{AQA} respecto a modelos 3D profundos, motivando el uso de distilación de conocimiento como mecanismo de cierre de esa brecha.
 
-Para enfrentar este dilema, la \textbf{distilación de conocimiento} (\textit{Knowledge Distillation}, \ac{KD}) surge como una estrategia efectiva. Mediante esta técnica, se transfiere el conocimiento aprendido por un modelo complejo (denominado \textit{Teacher}) a una arquitectura más ligera (\textit{Student}), con el objetivo de replicar su comportamiento de forma más eficiente. Aunque existen trabajos que aplican \ac{KD} en tareas generales de visión por computadora, la combinación específica de mecanismos de atención espacio-temporal y alineación temporal ha sido poco explorada dentro del contexto de \ac{AQA}. Esta brecha representa una oportunidad metodológica valiosa para avanzar hacia soluciones más prácticas y generalizables.
+Sin embargo, el ecosistema ha evolucionado sustancialmente en los últimos años: los pesos pre-entrenados en ImageNet distribuidos actualmente con \texttt{torchvision} son considerablemente más robustos que los disponibles en 2019--2020, y las prácticas modernas de entrenamiento (AMP, \textit{gradient accumulation}, schedulers cosenoidales) han mejorado la convergencia de arquitecturas livianas. Esto plantea una pregunta metodológica que no ha sido respondida de forma sistemática: **¿sigue siendo estrictamente necesaria la destilación de conocimiento espacio-temporal cuando el Student es una arquitectura moderna correctamente inicializada y entrenada? ¿Y, si lo es, bajo qué condiciones arquitectónicas concretas aporta valor?**
+
+Para abordar esta pregunta, la \textbf{distilación de conocimiento} (\textit{Knowledge Distillation}, \ac{KD}) \cite{Hinton2015Distilling} sigue siendo el marco natural. La combinación específica de (i) destilación sobre mapas de atención espacio-temporal y (ii) alineación temporal de representaciones intermedias ha sido poco explorada de forma selectiva en \ac{AQA}, y menos aún caracterizada en función de si el Student incorpora o no modelado temporal explícito. Esta tesis construye y evalúa un framework que permite precisamente ese análisis.
 
 \section{Planteamiento del Problema}
 
-Diversas investigaciones han demostrado que los modelos profundos especializados en tareas de \ac{AQA}, como los basados en I3D, pueden alcanzar altos niveles de rendimiento al capturar patrones espacio-temporales complejos presentes en las acciones humanas. No obstante, su alto costo computacional, tanto en términos de tiempo de inferencia como de consumo energético, los hace inadecuados para escenarios de bajo consumo o de procesamiento en tiempo real.
+Los modelos profundos 3D para \ac{AQA}, como los basados en I3D, alcanzan alto rendimiento al capturar patrones espacio-temporales complejos, pero su costo computacional los hace inadecuados para dispositivos con recursos limitados. La literatura propone la destilación de conocimiento como solución, asumiendo implícitamente que los Students livianos, al entrenarse desde cero, son significativamente peores que el Teacher y que la destilación cierra esa brecha.
 
-La creciente necesidad de ejecutar modelos de inteligencia artificial en dispositivos con recursos limitados ha impulsado la exploración de arquitecturas más ligeras, como \ac{TSM} o MobileNet-V3. Sin embargo, estas alternativas, aunque eficientes, suelen presentar una pérdida de precisión considerable al ser entrenadas desde cero en tareas complejas como \ac{AQA}. Por tanto, se requiere un mecanismo que permita combinar lo mejor de ambos mundos: la precisión de los modelos pesados y la eficiencia de los modelos livianos.
+Esta asunción requiere revisión a la luz de los avances recientes en pesos pre-entrenados y prácticas de entrenamiento. Además, la destilación espacio-temporal propuesta en trabajos previos \cite{Yu2021GroupAware, Mun2019TKD} combina múltiples pérdidas auxiliares (atención, alineación de features) sin analizar si su aporte depende de las capacidades arquitectónicas del Student. Un Student con módulos temporales explícitos (e.g., TSM) podría recibir señales redundantes o conflictivas con las pérdidas temporales del KD.
 
 A partir de esta problemática, surge la siguiente \textbf{pregunta de investigación}:
 
-\begin{quote} \textbf{¿Cómo optimizar el proceso de transferencia de conocimiento desde un modelo complejo de \ac{AQA} hacia una arquitectura más ligera, de manera que se preserve un rendimiento aceptable y se habilite su uso en entornos con recursos computacionales limitados?} \end{quote}
+\begin{quote}
+\textbf{¿Cuándo y bajo qué condiciones arquitectónicas la destilación de conocimiento espacio-temporal aporta valor a Students livianos modernos en \ac{AQA}, y qué configuración de Student + KD logra el mejor compromiso entre precisión y eficiencia para despliegue en dispositivos con recursos limitados?}
+\end{quote}
 
-Responder a esta pregunta requiere el diseño de una estrategia de distilación adaptada específicamente al dominio del análisis de video, considerando tanto las características espacio-temporales de la tarea como las capacidades diferenciadas de las arquitecturas \textit{Teacher} y \textit{Student}.
+Responder a esta pregunta requiere (i) construir una línea base fuerte de Students livianos modernos, bien inicializados y bien entrenados; (ii) implementar un framework de destilación con componentes de atención espacio-temporal y alineación de representaciones; (iii) evaluar sistemáticamente la interacción entre la arquitectura del Student y las señales de destilación; y (iv) medir el impacto práctico en eficiencia computacional y generalización entre dominios.
 
 \section{Objetivos}
 
 \subsection{Objetivo General}
 
-Desarrollar una metodología eficiente de distilación de conocimiento que permita transferir el rendimiento de un modelo complejo basado en I3D hacia arquitecturas livianas, como \ac{TSM} y MobileNet-V3, aplicadas a la evaluación de la calidad de acciones humanas en video.
+Desarrollar y evaluar experimentalmente un framework eficiente de \textit{Action Quality Assessment} para dispositivos con recursos limitados, basado en arquitecturas livianas modernas (TSM-MobileNetV2 y MobileNetV3), complementado por un mecanismo de destilación de conocimiento espacio-temporal selectiva, y caracterizar las condiciones bajo las cuales la destilación aporta valor en función de la arquitectura del Student y del dominio del dataset.
 
 \subsection{Objetivos Específicos}
 
-\begin{itemize} \item Investigar el estado del arte en técnicas de \ac{AQA} y distilación de conocimiento en visión por computadora, identificando enfoques previos exitosos y sus limitaciones. \item Diseñar una estrategia de distilación que integre mecanismos complementarios, como el alineamiento de mapas de atención espacio-temporales y la sincronización de representaciones intermedias en el tiempo. \item Implementar y entrenar modelos \textit{Student} livianos, utilizando conjuntos de datos estándares de \ac{AQA} y empleando como referencia un modelo \textit{Teacher} basado en I3D preentrenado. \item Evaluar experimentalmente la eficacia de la estrategia propuesta mediante métricas de precisión (SRCC, PLCC, MAE) y de eficiencia computacional (tiempo de inferencia, uso de memoria, FLOPs). \item Comparar el rendimiento de los modelos distilados con sus versiones sin distilación y con otras arquitecturas modernas, analizando los beneficios concretos de la metodología desarrollada. \end{itemize}
+\begin{itemize}
+  \item Investigar el estado del arte en técnicas de \ac{AQA} y destilación de conocimiento en visión por computadora, identificando enfoques previos exitosos, sus supuestos, y sus limitaciones en arquitecturas modernas.
+
+  \item Construir un \textit{pipeline} reproducible de Students livianos (TSM-MobileNetV2 y MobileNetV3) inicializados con pesos pre-entrenados en ImageNet y entrenados con prácticas modernas (AdamW, cosine schedule, AMP), que sirva como línea base fuerte para la comparación con el Teacher I3D.
+
+  \item Diseñar e implementar un framework de destilación con tres señales complementarias: regresión sobre el score, alineación de mapas de atención espacio-temporal y alineación de representaciones intermedias cuadro a cuadro.
+
+  \item Evaluar sistemáticamente el framework en tres dominios de complejidad y naturaleza distinta: AQA-7 (deporte multi-disciplina), MTL-AQA (clavados especializados) y JIGSAWS (cirugía robótica), midiendo precisión (SRCC, PLCC, MAE) y eficiencia (FLOPs, latencia).
+
+  \item Caracterizar empíricamente la interacción entre la arquitectura del Student (con o sin módulos temporales explícitos) y el aporte del KD, identificando las configuraciones donde la destilación mejora y donde degrada el rendimiento.
+
+  \item Evaluar la capacidad de generalización del framework mediante transferencia cruzada entre dominios (MTL-AQA $\to$ AQA-7 y AQA-7 $\to$ JIGSAWS).
+\end{itemize}
 
 \section{Organización de la Tesis}
 \label{sec:organizacion}

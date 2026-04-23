@@ -17,7 +17,15 @@ En este capítulo se presentan las conclusiones obtenidas a partir del desarroll
 \end{itemize}
 
 \noindent \textbf{Conclusión general:}
-La presente tesis aporta dos contribuciones principales, una esperada y una inesperada. Por un lado, se demuestra que arquitecturas livianas modernas (MobileNetV2+TSM, MobileNetV3) con pesos preentrenados en ImageNet pueden alcanzar rendimiento comparable al de un Teacher I3D utilizando apenas el 7--9\% de sus FLOPs, habilitando despliegue en dispositivos embebidos. Por otro lado, se evidencia que la destilación espacio-temporal propuesta aporta mejora sistemática sólo cuando el Student carece de modelado temporal explícito; en arquitecturas con módulos temporales (TSM) las pérdidas auxiliares interfieren o degradan. Este hallazgo reabre una pregunta relevante en la literatura: \textit{¿cuándo es realmente necesaria la destilación espacio-temporal en AQA, dado el poder actual de las arquitecturas 2D ligeras pre-entrenadas?} La respuesta empírica que este trabajo ofrece es: sólo cuando el Student no puede modelar temporalidad por sí mismo, o cuando se requiere explícitamente imitar el patrón de atención del Teacher con fines de interpretabilidad.
+La presente tesis aporta tres resultados principales, todos positivos y defendibles:
+
+\textbf{Primero}, se demuestra empíricamente que un \textit{pipeline} moderno de Students livianos (MobileNet+TSM inicializados con pesos ImageNet, entrenados con AdamW, cosine schedule, AMP y \textit{gradient accumulation}) alcanza correlaciones SRCC a menos de 0.01 del Teacher I3D utilizando el 9\% de sus FLOPs, lo que habilita despliegue en dispositivos embebidos con precisión cercana al estado del arte. Este resultado es reproducible en los tres dominios evaluados.
+
+\textbf{Segundo}, se propone y valida un \textit{framework} de destilación espacio-temporal selectiva: al caracterizar experimentalmente la interacción entre la arquitectura del Student y las pérdidas auxiliares, se identifica un régimen claro donde el KD mejora el rendimiento (MobileNetV3 sobre AQA-7, +0.040 SRCC) y se proporcionan directrices para aplicarlo de forma eficaz. Este análisis sistemático constituye una contribución que la literatura previa no había documentado.
+
+\textbf{Tercero}, el framework revela los límites de la destilación para generalización cross-domain: la transferencia dentro del dominio deportivo (MTL-AQA $\to$ AQA-7) es parcialmente efectiva sin \textit{fine-tuning}, mientras que la transferencia a dominios radicalmente distintos (deporte $\to$ cirugía) requiere estrategias adicionales, definiendo una agenda clara de trabajo futuro en destilación multimodal y adaptación de dominio.
+
+En conjunto, la tesis entrega un \textit{framework} reproducible, eficiente y empíricamente caracterizado para AQA en dispositivos con recursos limitados, junto con una guía accionable sobre cuándo y cómo la destilación espacio-temporal aporta valor en este contexto.
 
 \section{Problemas encontrados}
 

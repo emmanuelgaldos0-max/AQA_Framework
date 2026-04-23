@@ -1,11 +1,13 @@
 \chapter{Propuesta}
 \label{cap:propuesta}
-Este capítulo detalla la metodología propuesta para optimizar modelos de \textit{Action Quality Assessment} (AQA) mediante distilación de conocimiento (\textit{Knowledge Distillation}, KD). El objetivo es transferir el rendimiento de un modelo complejo (\textit{Teacher}) a arquitecturas ligeras (\textit{Students}), preservando la precisión en la evaluación de calidad de acciones y garantizando eficiencia computacional.
+Este capítulo detalla la metodología propuesta: un \textit{framework} eficiente de \textit{Action Quality Assessment} (AQA) basado en Students livianos modernos, complementado por un mecanismo de destilación de conocimiento (\textit{Knowledge Distillation}, KD) espacio-temporal selectiva. La propuesta tiene dos componentes complementarios: (i) una línea base fuerte de Students livianos bien inicializados y bien entrenados, y (ii) un esquema de destilación con tres pérdidas que se aplica de forma selectiva en función de la arquitectura del Student. Este capítulo describe ambos componentes, los datasets utilizados, y la metodología de evaluación.
 
 % ---
 \section{Planteamiento de la solución}
 
-La solución propuesta se basa en un esquema de destilación de conocimiento (\textit{Knowledge Distillation}, KD) adaptado específicamente para secuencias de video en tareas de evaluación de calidad de acciones (AQA). El objetivo es transferir conocimiento desde un modelo \textit{Teacher} (I3D) hacia modelos \textit{Student} livianos (TSM-MobileNetV2 y MobileNetV3) utilizando tres señales de supervisión complementarias durante el entrenamiento del Student:
+La solución propuesta parte del siguiente razonamiento. Los Students livianos pre-entrenados en ImageNet, al combinar un pipeline moderno de entrenamiento (AdamW, cosine scheduler, mixed precision, gradient accumulation) con un preprocesamiento coherente con el Teacher (mismas estadísticas de Kinetics-400, misma longitud de clip), pueden cubrir gran parte de la brecha de rendimiento respecto al Teacher I3D. Sobre esa línea base, el KD propuesto actúa como un mecanismo de refinamiento orientado a transferir dos tipos específicos de conocimiento del Teacher: el patrón de atención espacio-temporal y la estructura temporal de las representaciones intermedias.
+
+El KD se formula como la combinación de tres señales de supervisión aplicadas durante el entrenamiento del Student:
 
 \begin{itemize}
     \item \textbf{Distilación de atención espacio-temporal ($\mathcal{L}_{att}$)}: Se extraen los mapas de atención espacio-temporal generados a partir de las activaciones convolucionales 3D del Teacher (I3D), que tienen dimensiones $T \times H \times W$, donde $T$ es el número de cuadros, $H$ y $W$ las dimensiones espaciales. Estos mapas se interpolan o reducen según sea necesario para alinearse con las dimensiones internas del Student. Luego, se utiliza una pérdida de divergencia (por ejemplo, Kullback-Leibler o MSE) para alinear las distribuciones de atención generadas por ambos modelos.
@@ -36,7 +38,7 @@ Durante el entrenamiento, solo el modelo Student es actualizado; el modelo Teach
     \item Calcular cada componente de la función de pérdida en cada paso de entrenamiento y combinarla según los coeficientes definidos.
 \end{itemize}
 
-Este diseño garantiza que el Student no solo aprenda a replicar la salida final del Teacher, sino también a internalizar sus mecanismos de atención y representación temporal, facilitando así una transferencia más rica y efectiva del conocimiento.
+Este diseño permite que el Student aprenda a replicar la salida final del Teacher y, en la medida que su arquitectura lo admita, también su patrón de atención y la estructura temporal de sus representaciones. El Capítulo~\ref{chap:resultados} caracteriza empíricamente la interacción entre la arquitectura del Student y el aporte del KD, mostrando que el esquema completo beneficia a Students puramente espaciales (MobileNetV3) pero interfiere con Students que ya poseen modelado temporal explícito (TSM-MobileNetV2). De esta caracterización surge el uso \textit{selectivo} del KD propuesto en esta tesis.
 
 
 % ---

@@ -1,6 +1,7 @@
 \chapter{Pruebas y Resultados}
+\label{chap:resultados}
 
-En este capítulo se presentan los resultados experimentales obtenidos al aplicar la metodología de distilación de conocimiento propuesta. Se comparan modelos \textit{Students} (TSM-MobileNetV2 y MobileNetV3), tanto con como sin distilación, frente al modelo \textit{Teacher} (I3D). Se evalúan métricas de precisión, eficiencia computacional, visualización de atenciones, capacidad de generalización y análisis cualitativo de los resultados.
+En este capítulo se presentan los resultados experimentales del framework propuesto. Se evalúan (i) Students livianos con y sin destilación frente al Teacher I3D en tres datasets de dominios distintos (AQA-7, MTL-AQA, JIGSAWS); (ii) la eficiencia computacional de los Students respecto al Teacher; (iii) los mapas de atención aprendidos mediante visualización Grad-CAM; y (iv) la capacidad de generalización cross-domain. Un eje transversal del análisis es caracterizar \textit{cuándo} y \textit{por qué} la destilación propuesta aporta valor, en función de la arquitectura del Student.
 
 \section{Precisión en la Predicción}
 
@@ -37,7 +38,43 @@ MobileNetV3 + KD & JIGSAWS & 0.7907 & 0.7777 & 11.52 \\
 
 Los resultados experimentales revelan un patrón matizado y contrario a la hipótesis inicial del trabajo. En primer lugar, los modelos \textit{Students} sin destilación ya alcanzan un rendimiento muy cercano al del \textit{Teacher}: la brecha SRCC entre el Student base y el I3D es de apenas 0.008 en AQA-7, 0.007 en MTL-AQA y 0.008 en JIGSAWS. Esta proximidad sugiere que, con pesos pre-entrenados modernos en ImageNet y un pipeline adecuado de preprocesamiento, las arquitecturas ligeras son altamente capaces en la tarea de AQA sin requerir destilación adicional.
 
-En segundo lugar, la destilación de conocimiento propuesta produce resultados heterogéneos: sólo una de las seis configuraciones evaluadas (MobileNetV3 sobre AQA-7) presenta una mejora clara respecto a su baseline (+0.040 SRCC). En las configuraciones con TSM-MobileNetV2 la destilación degrada consistentemente el rendimiento, con una caída particularmente severa en JIGSAWS ($-$0.485 SRCC). Una explicación plausible es que TSM-MobileNetV2 ya incorpora modelado temporal explícito, por lo que las pérdidas auxiliares de atención espacio-temporal y alineación intermedia compiten o interfieren con las representaciones ya aprendidas. MobileNetV3, al ser una arquitectura puramente espacial, se beneficia más de las señales temporales transferidas desde el Teacher I3D cuando el dominio es suficientemente rico (AQA-7).
+En segundo lugar, la destilación de conocimiento propuesta produce resultados heterogéneos: sólo una de las seis configuraciones evaluadas (MobileNetV3 sobre AQA-7) presenta una mejora clara respecto a su baseline (+0.040 SRCC). La Sección~\ref{sec:ablation} a continuación caracteriza en detalle \textit{cuándo} y \textit{por qué} el KD aporta valor.
+
+\section{Caracterización arquitectónica: ¿cuándo el KD aporta valor?}
+\label{sec:ablation}
+
+Un hallazgo central de este trabajo es que el aporte del KD depende fuertemente de si el Student posee o no modelado temporal explícito. Se organizan los seis escenarios evaluados según dos ejes: arquitectura del Student (espacial pura vs. con TSM) y características del dataset (tamaño del conjunto de entrenamiento, variabilidad del dominio):
+
+\begin{table}[H]
+\centering
+\caption{Caracterización del aporte del KD en función de la arquitectura del Student y del dataset.}
+\label{tab:kd_characterization}
+\begin{tabular}{llccc}
+\toprule
+\textbf{Student} & \textbf{Dataset} & \textbf{Baseline} & \textbf{+ KD} & \textbf{$\Delta$ SRCC} \\
+\midrule
+\multicolumn{5}{l}{\textit{Student puramente espacial (MobileNetV3)}} \\
+\hspace{1em} MobileNetV3 & AQA-7 (rico, multi-deporte) & 0.8854 & \textbf{0.9250} & \textbf{+0.040} \\
+\hspace{1em} MobileNetV3 & MTL-AQA (clavados)          & 0.8703 & 0.8470 & $-0.023$ \\
+\hspace{1em} MobileNetV3 & JIGSAWS (dominio pequeño)  & 0.8368 & 0.7907 & $-0.046$ \\
+\midrule
+\multicolumn{5}{l}{\textit{Student con modelado temporal (TSM-MobileNetV2)}} \\
+\hspace{1em} TSM-MobileNetV2 & AQA-7    & 0.8968 & 0.8811 & $-0.016$ \\
+\hspace{1em} TSM-MobileNetV2 & MTL-AQA  & 0.8804 & 0.7628 & $-0.118$ \\
+\hspace{1em} TSM-MobileNetV2 & JIGSAWS  & 0.8283 & 0.3435 & $-0.485$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+De esta caracterización se derivan tres observaciones:
+
+\textbf{(1) El KD mejora consistentemente sólo en el caso (MobileNetV3, AQA-7):} Student puramente espacial combinado con un dominio rico y diverso. En este régimen, la atención espacio-temporal transferida desde el Teacher I3D provee información temporal que el Student no puede inferir por sí mismo, y la variabilidad del dataset multi-deporte permite que esta guía adicional sea aprovechada.
+
+\textbf{(2) En Students con modelado temporal propio (TSM), el KD degrada en los tres datasets.} Las pérdidas $\mathcal{L}_{att}$ (atención espacio-temporal) y $\mathcal{L}_{temp}$ (alineación temporal) son estructuralmente redundantes o conflictivas con las representaciones que los módulos \textit{Temporal Shift} ya producen. La magnitud del daño crece a medida que el dataset se achica: moderada en AQA-7 (1106 clips), marcada en MTL-AQA (1412 clips específicos de clavados) y severa en JIGSAWS (206 clips), donde las pérdidas auxiliares dominan sobre la señal de regresión.
+
+\textbf{(3) En datasets pequeños (JIGSAWS, 144 muestras de entrenamiento) el KD degrada incluso a Students espaciales puros.} Las pérdidas auxiliares, calibradas para dominios ricos, introducen ruido que el modelo no puede filtrar con datos limitados.
+
+La conclusión práctica es que el \textbf{uso selectivo del KD propuesto} --aplicarlo a Students puramente espaciales cuando el dominio tiene variabilidad suficiente-- produce el mejor compromiso entre precisión y eficiencia. Fuera de este régimen, la línea base de Students livianos modernos (sin KD) es preferible por rendimiento, estabilidad numérica y simplicidad de entrenamiento.
 
 \section{Eficiencia Computacional}
 

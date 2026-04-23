@@ -278,4 +278,29 @@ Este resultado es **científicamente honesto y publicable** aunque contradice la
 
 ---
 
-*Última actualización: 2026-04-22 (final de Fase 5.2 – Students baseline completos, KD pendiente)*
+### 10. Reformulación de la tesis (Camino C) — 2026-04-23
+
+Dado que los resultados experimentales no sostenían la hipótesis original
+("KD mejora al Student +0.12 SRCC"), se renarrativizó la tesis en positivo
+sin ocultar hallazgos negativos. Cambios principales:
+
+- **Pregunta de investigación reformulada** de *"¿cómo optimizar el proceso
+  de transferencia?"* a *"¿Cuándo y bajo qué condiciones arquitectónicas la
+  destilación espacio-temporal aporta valor a Students livianos modernos?"*.
+- **Objetivo general** cambia de "desarrollar una metodología de KD que
+  transfiera el rendimiento" a "desarrollar y evaluar un framework eficiente
+  complementado por KD selectiva, y caracterizar las condiciones de aporte".
+- **Abstract y Resumen**: narrativa de dos contribuciones (línea base fuerte
+  + KD selectiva) en lugar de una sola hipótesis que fallaría.
+- **Cap. 4 §5.2 (nueva)**: "Caracterización arquitectónica: ¿cuándo el KD
+  aporta valor?" presenta la interacción arquitectura × dataset en una tabla
+  dedicada, convierte el fallo de TSM-MBv2 en análisis estructurado.
+- **Conclusiones**: tres contribuciones positivas (pipeline eficiente,
+  framework selectivo, límites cross-domain) en lugar de una sola.
+
+PDF resultante: 45 páginas, compila limpio. Todos los números experimentales
+se preservan; solo cambia la narrativa interpretativa.
+
+---
+
+*Última actualización: 2026-04-23 (Fase 7 cerrada con reformulación narrativa Camino C).*
