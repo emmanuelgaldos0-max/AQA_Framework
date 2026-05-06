@@ -1,0 +1,13 @@
+extends: base.yaml
+
+# E7 — Ablación sin componente temporal (TSM removido).
+# MobileNetV2 plano: mismo backbone que TSM-MBv2 pero SIN inyección TSM.
+
+model:
+  name: mobilenetv2_video
+  pretrained_on: imagenet
+
+train:
+  batch_size: 2
+  grad_accum_steps: 8
+  lr: 3.0e-4

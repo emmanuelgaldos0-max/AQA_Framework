@@ -1,0 +1,19 @@
+extends: base.yaml
+
+# Teacher SlowFast-R50 (E1 extendido del plan del asesor).
+# Mismas reglas que teacher_i3d.yaml para que la comparación sea limpia.
+
+model:
+  name: slowfast
+  pretrained_on: kinetics400
+
+train:
+  batch_size: 2
+  grad_accum_steps: 8
+  lr: 1.0e-4              # más bajo que students; SlowFast es sensible
+  weight_decay: 1.0e-4
+  epochs: 50
+  early_stop_patience: 10
+
+data:
+  score_scale: 100.0

@@ -1,0 +1,15 @@
+extends: base.yaml
+
+model:
+  name: mobilenetv3_large
+  pretrained_on: imagenet
+
+train:
+  batch_size: 1
+  grad_accum_steps: 16   # batch efectivo 16; reducido por OOM en CORAL (2 forwards/paso)
+  lr: 3.0e-4
+  epochs: 40
+  early_stop_patience: 10
+
+coral:
+  lambda: 0.1

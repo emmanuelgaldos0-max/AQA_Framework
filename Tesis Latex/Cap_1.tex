@@ -2,52 +2,48 @@
 
 \section{Motivación y Contexto}
 
-En los últimos años, el reconocimiento automático de acciones humanas en video ha emergido como un área clave dentro del campo de la visión por computadora, con aplicaciones que abarcan desde la seguridad y el entretenimiento hasta la medicina y el deporte. No obstante, más allá de identificar qué acción se realiza en un video, ha cobrado gran relevancia una tarea más compleja: la \textbf{Evaluación de la Calidad de Acciones} (\textit{Action Quality Assessment}, \ac{AQA}). Esta disciplina busca medir la calidad con la que se ejecuta una acción, considerando criterios como la técnica, la fluidez y la precisión del movimiento. A diferencia del reconocimiento de acciones, \ac{AQA} introduce desafíos adicionales tanto en términos de modelado como de evaluación.
+En los últimos años, el reconocimiento automático de acciones humanas en video ha emergido como un área clave dentro del campo de la visión por computadora, con aplicaciones que abarcan desde la seguridad y el entretenimiento hasta la medicina y el deporte. Más allá de identificar qué acción se realiza en un video, ha cobrado relevancia una tarea más compleja: la \textbf{Evaluación de la Calidad de Acciones} (\textit{Action Quality Assessment}, \ac{AQA}). Esta disciplina busca medir la calidad con la que se ejecuta una acción, considerando criterios como la técnica, la fluidez y la precisión del movimiento. A diferencia del reconocimiento de acciones, \ac{AQA} introduce desafíos adicionales tanto en términos de modelado como de evaluación.
 
-El interés por \ac{AQA} ha crecido sustancialmente debido a su potencial impacto en contextos donde el desempeño técnico es crítico. En el ámbito deportivo, por ejemplo, entrenadores y atletas pueden aprovechar sistemas automáticos para recibir retroalimentación objetiva y detallada que complemente la evaluación humana, reduciendo sesgos y mejorando el entrenamiento personalizado. De igual forma, en el campo de la rehabilitación física, los profesionales de la salud podrían beneficiarse del uso de modelos que evalúan en tiempo real la correcta ejecución de ejercicios terapéuticos, facilitando así el seguimiento remoto de pacientes y disminuyendo la necesidad de supervisión constante.
+El interés por \ac{AQA} ha crecido sustancialmente debido a su potencial impacto en contextos donde el desempeño técnico es crítico. En el ámbito deportivo, entrenadores y atletas pueden aprovechar sistemas automáticos para recibir retroalimentación objetiva y detallada que complemente la evaluación humana. En rehabilitación física, los profesionales podrían beneficiarse de modelos que evalúen en tiempo real la correcta ejecución de ejercicios terapéuticos, facilitando el seguimiento remoto de pacientes. En educación médica, la evaluación automática de gestos quirúrgicos podría apoyar la formación de residentes.
 
-A pesar de estos beneficios potenciales, uno de los principales obstáculos para la adopción de sistemas de \ac{AQA} en escenarios reales radica en su elevada demanda computacional. Modelos de alto rendimiento, como los basados en arquitecturas tridimensionales profundas (por ejemplo, I3D), han demostrado una alta precisión al capturar patrones espacio-temporales complejos. Sin embargo, su tamaño y costo computacional los hacen inviables para aplicaciones que requieren baja latencia, eficiencia energética o procesamiento local. Esto pone en evidencia la necesidad urgente de soluciones más eficientes, capaces de ofrecer resultados competitivos sin depender de infraestructuras costosas o de alto consumo.
-
-En este contexto, arquitecturas livianas como \ac{TSM} y MobileNet-V3 se presentan como alternativas prometedoras. Estas redes son ampliamente utilizadas en entornos con recursos limitados debido a su eficiencia, facilidad de implementación y disponibilidad en plataformas como Google Colab o dispositivos móviles. La literatura reciente \cite{Yu2021GroupAware, Zhou2023AQA_SD, Cai2023VisionLanguageAQA} ha reportado que estas arquitecturas, entrenadas desde cero, muestran una pérdida significativa de rendimiento en \ac{AQA} respecto a modelos 3D profundos, motivando el uso de distilación de conocimiento como mecanismo de cierre de esa brecha.
-
-Sin embargo, el ecosistema ha evolucionado sustancialmente en los últimos años: los pesos pre-entrenados en ImageNet distribuidos actualmente con \texttt{torchvision} son considerablemente más robustos que los disponibles en 2019--2020, y las prácticas modernas de entrenamiento (AMP, \textit{gradient accumulation}, schedulers cosenoidales) han mejorado la convergencia de arquitecturas livianas. Esto plantea una pregunta metodológica que no ha sido respondida de forma sistemática: **¿sigue siendo estrictamente necesaria la destilación de conocimiento espacio-temporal cuando el Student es una arquitectura moderna correctamente inicializada y entrenada? ¿Y, si lo es, bajo qué condiciones arquitectónicas concretas aporta valor?**
-
-Para abordar esta pregunta, la \textbf{distilación de conocimiento} (\textit{Knowledge Distillation}, \ac{KD}) \cite{Hinton2015Distilling} sigue siendo el marco natural. La combinación específica de (i) destilación sobre mapas de atención espacio-temporal y (ii) alineación temporal de representaciones intermedias ha sido poco explorada de forma selectiva en \ac{AQA}, y menos aún caracterizada en función de si el Student incorpora o no modelado temporal explícito. Esta tesis construye y evalúa un framework que permite precisamente ese análisis.
+A pesar de estos beneficios potenciales, uno de los principales obstáculos para la adopción de sistemas de \ac{AQA} en escenarios reales radica en su elevada demanda computacional. Modelos de alto rendimiento basados en arquitecturas tridimensionales profundas, como I3D \cite{Carreira2017I3D} y SlowFast \cite{feichtenhofer2019slowfast}, han demostrado alta precisión al capturar patrones espacio-temporales complejos. Sin embargo, su tamaño y costo computacional los hacen inviables para aplicaciones que requieren baja latencia, eficiencia energética o procesamiento local en dispositivos con recursos limitados.
 
 \section{Planteamiento del Problema}
 
-Los modelos profundos 3D para \ac{AQA}, como los basados en I3D, alcanzan alto rendimiento al capturar patrones espacio-temporales complejos, pero su costo computacional los hace inadecuados para dispositivos con recursos limitados. La literatura propone la destilación de conocimiento como solución, asumiendo implícitamente que los Students livianos, al entrenarse desde cero, son significativamente peores que el Teacher y que la destilación cierra esa brecha.
+La estimación automática de la calidad de acciones en video requiere capturar información espacial y temporal asociada a la ejecución de una acción humana. Los modelos 3D profundos, como \ac{I3D}, han sido ampliamente utilizados por su capacidad para modelar dependencias espacio-temporales complejas; sin embargo, su alto costo computacional limita su uso en escenarios donde se requiere baja latencia, menor consumo de memoria o despliegue en dispositivos con recursos limitados.
 
-Esta asunción requiere revisión a la luz de los avances recientes en pesos pre-entrenados y prácticas de entrenamiento. Además, la destilación espacio-temporal propuesta en trabajos previos \cite{Yu2021GroupAware, Mun2019TKD} combina múltiples pérdidas auxiliares (atención, alineación de features) sin analizar si su aporte depende de las capacidades arquitectónicas del Student. Un Student con módulos temporales explícitos (e.g., TSM) podría recibir señales redundantes o conflictivas con las pérdidas temporales del KD.
+La literatura reciente ha propuesto la destilación de conocimiento (\textit{Knowledge Distillation}, \ac{KD}) \cite{Hinton2015Distilling} como estrategia para transferir información desde modelos \textit{Teacher} pesados hacia modelos \textit{Student} livianos. Esta línea de trabajo \cite{Yu2021GroupAware,Mun2019TKD,Cai2023VisionLanguageAQA} parte de la premisa de que las arquitecturas livianas presentan una brecha sustancial de rendimiento frente al \textit{Teacher} y que dicha brecha debe cerrarse mediante señales adicionales de supervisión. No obstante, esta premisa fue formulada en un contexto donde los pesos preentrenados disponibles, las prácticas de entrenamiento y las arquitecturas eficientes eran menos maduras.
+
+Actualmente, los modelos livianos pueden beneficiarse de pesos modernos preentrenados en ImageNet, optimizadores como AdamW, programación cosenoidal de la tasa de aprendizaje, entrenamiento con precisión mixta, acumulación de gradientes y módulos temporales eficientes como \textit{Temporal Shift Module} \cite{Lin2019TSM}. Bajo este nuevo escenario, no está claro si los \textit{Students} livianos siguen requiriendo destilación para aproximarse al rendimiento de un \textit{Teacher} 3D, ni cuáles son los límites reales de un \textit{pipeline} liviano moderno para \ac{AQA}.
 
 A partir de esta problemática, surge la siguiente \textbf{pregunta de investigación}:
 
 \begin{quote}
-\textbf{¿Cuándo y bajo qué condiciones arquitectónicas la destilación de conocimiento espacio-temporal aporta valor a Students livianos modernos en \ac{AQA}, y qué configuración de Student + KD logra el mejor compromiso entre precisión y eficiencia para despliegue en dispositivos con recursos limitados?}
+\textbf{¿En qué medida un \textit{pipeline} liviano basado en arquitecturas modernas (TSM-MobileNetV2 y MobileNetV3), correctamente inicializado y entrenado con prácticas actuales, puede aproximarse al rendimiento de un \textit{Teacher} 3D profundo en \ac{AQA} a un costo computacional sustancialmente menor, y dónde están sus límites de aplicabilidad?}
 \end{quote}
 
-Responder a esta pregunta requiere (i) construir una línea base fuerte de Students livianos modernos, bien inicializados y bien entrenados; (ii) implementar un framework de destilación con componentes de atención espacio-temporal y alineación de representaciones; (iii) evaluar sistemáticamente la interacción entre la arquitectura del Student y las señales de destilación; y (iv) medir el impacto práctico en eficiencia computacional y generalización entre dominios.
+Este trabajo aborda dicho problema mediante el desarrollo de un \textit{pipeline} eficiente basado en arquitecturas livianas modernas, evaluando su capacidad para aproximarse al rendimiento de \ac{I3D} y \textit{SlowFast} en distintos dominios, caracterizando su costo computacional y delimitando los escenarios donde el enfoque resulta suficiente o requiere mecanismos adicionales.
 
 \section{Objetivos}
 
 \subsection{Objetivo General}
 
-Desarrollar y evaluar experimentalmente un framework eficiente de \textit{Action Quality Assessment} para dispositivos con recursos limitados, basado en arquitecturas livianas modernas (TSM-MobileNetV2 y MobileNetV3), complementado por un mecanismo de destilación de conocimiento espacio-temporal selectiva, y caracterizar las condiciones bajo las cuales la destilación aporta valor en función de la arquitectura del Student y del dominio del dataset.
+Desarrollar un \textit{pipeline} eficiente de \textit{Action Quality Assessment} basado en arquitecturas livianas modernas, evaluando empíricamente su capacidad para alcanzar rendimiento competitivo respecto a modelos 3D profundos en dominios de naturaleza distinta y delimitando sus límites de aplicabilidad.
 
 \subsection{Objetivos Específicos}
 
 \begin{itemize}
-  \item Investigar el estado del arte en técnicas de \ac{AQA} y destilación de conocimiento en visión por computadora, identificando enfoques previos exitosos, sus supuestos, y sus limitaciones en arquitecturas modernas.
+  \item \textbf{OE1.} Revisar el estado del arte en \ac{AQA} y métodos de compresión o destilación aplicados a video, identificando las principales suposiciones sobre la brecha entre modelos \textit{Teacher} 3D y \textit{Students} livianos.
 
-  \item Construir un \textit{pipeline} reproducible de Students livianos (TSM-MobileNetV2 y MobileNetV3) inicializados con pesos pre-entrenados en ImageNet y entrenados con prácticas modernas (AdamW, cosine schedule, AMP), que sirva como línea base fuerte para la comparación con el Teacher I3D.
+  \item \textbf{OE2.} Construir un \textit{pipeline} reproducible de entrenamiento e inferencia para \textit{Students} livianos, específicamente \ac{TSM}-MobileNetV2 y MobileNetV3, empleando pesos preentrenados, optimización moderna, precisión mixta y acumulación de gradientes.
 
-  \item Diseñar e implementar un framework de destilación con tres señales complementarias: regresión sobre el score, alineación de mapas de atención espacio-temporal y alineación de representaciones intermedias cuadro a cuadro.
+  \item \textbf{OE3.} Cuantificar la brecha de rendimiento entre los \textit{Students} livianos y el \textit{Teacher} \ac{I3D} mediante \ac{SRCC}, \ac{PLCC} y \ac{MAE} en datasets representativos de \ac{AQA}, complementando la comparación con un \textit{Teacher} 3D más moderno (SlowFast-R50) en el dataset principal.
 
-  \item Evaluar sistemáticamente el framework en tres dominios de complejidad y naturaleza distinta: AQA-7 (deporte multi-disciplina), MTL-AQA (clavados especializados) y JIGSAWS (cirugía robótica), midiendo precisión (SRCC, PLCC, MAE) y eficiencia (FLOPs, latencia).
+  \item \textbf{OE4.} Analizar el impacto de componentes clave del \textit{pipeline} mediante ablaciones mínimas sobre el dataset principal, priorizando las decisiones con mayor efecto esperado en el rendimiento (preentrenamiento ImageNet y módulo temporal).
 
-  \item Caracterizar empíricamente la interacción entre la arquitectura del Student (con o sin módulos temporales explícitos) y el aporte del KD, identificando las configuraciones donde la destilación mejora y donde degrada el rendimiento.
+  \item \textbf{OE5.} Caracterizar la eficiencia computacional del \textit{pipeline} propuesto en términos de parámetros, \ac{FLOPs} y latencia de inferencia frente al \textit{Teacher} \ac{I3D}.
 
-  \item Evaluar la capacidad de generalización del framework mediante transferencia cruzada entre dominios (MTL-AQA $\to$ AQA-7 y AQA-7 $\to$ JIGSAWS).
+  \item \textbf{OE6.} Delimitar los límites de aplicabilidad del \textit{pipeline} mediante análisis complementarios de transferencia cruzada entre dominios y aporte marginal de la destilación de conocimiento sobre la línea base liviana.
 \end{itemize}
 
 \section{Organización de la Tesis}
@@ -56,23 +52,13 @@ Desarrollar y evaluar experimentalmente un framework eficiente de \textit{Action
 El presente documento está estructurado de la siguiente manera:
 
 \begin{itemize}
-    \item \textbf{Capítulo 2: Marco Teórico} - Fundamentos de \textit{Action Quality Assessment} (AQA) y Distilación de Conocimiento (KD), incluyendo métricas clave (SRCC, PLCC, MAE) y conjuntos de datos (AQA-7, MTL-AQA, JIGSAWS).
-    
-    \item \textbf{Capítulo 3: Estado del Arte} - Revisión de técnicas recientes en KD para AQA, con énfasis en distilación intermodal y auto-distilación multiescalar.
-    
-    \item \textbf{Capítulo 4: Propuesta} - Metodología completa con:
-    \begin{itemize}
-        \item Modelos: I3D (Teacher) y TSM/MobileNet-V3 (Students).
-        \item Mecanismos de distilación (atención espacio-temporal y alineación de características).
-        \item Pipeline de preprocesamiento y evaluación.
-    \end{itemize}
-    
-    \item \textbf{Capítulo 5: Resultados} - Análisis comparativo de modelos distilados vs. baseline, métricas de precisión y eficiencia.
-    
-    \item \textbf{Capítulo 6: Conclusiones} - Hallazgos clave, limitaciones y direcciones futuras para KD en AQA.
+    \item \textbf{Capítulo 2: Marco Teórico} -- Fundamentos de \textit{Action Quality Assessment} (\ac{AQA}), métricas clave (\ac{SRCC}, \ac{PLCC}, \ac{MAE}), conjuntos de datos (AQA-7, MTL-AQA, JIGSAWS) y nociones de \ac{KD}.
+
+    \item \textbf{Capítulo 3: Estado del Arte} -- Revisión de técnicas recientes en \ac{AQA} y \ac{KD} aplicada a video, con énfasis en las suposiciones sobre la brecha entre \textit{Teacher} y \textit{Student}.
+
+    \item \textbf{Capítulo 4: Propuesta} -- Metodología completa del \textit{pipeline} liviano: arquitecturas \textit{Student} (\ac{TSM}-MobileNetV2 y MobileNetV3), receta de entrenamiento moderna, datasets y protocolo de evaluación. Se incluye también el módulo de destilación que se utiliza como análisis marginal en el Capítulo 5.
+
+    \item \textbf{Capítulo 5: Resultados} -- Comparación principal del \textit{pipeline} liviano frente a los \textit{Teachers} \ac{I3D} y SlowFast-R50, ablaciones sobre el preentrenamiento ImageNet y el módulo temporal, eficiencia computacional, transferencia cruzada y análisis marginal de la destilación.
+
+    \item \textbf{Capítulo 6: Conclusiones} -- Hallazgos clave alineados a los objetivos específicos, limitaciones y direcciones futuras.
 \end{itemize}
-
-
-
-% \section{Cronograma}
-% Sección de cronograma eliminada: corresponde únicamente al plan de tesis, no a la versión final.

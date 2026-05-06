@@ -11,7 +11,7 @@
 ## 1. ¿De qué trata esta tesis?
 
 Imagina que una gimnasta hace un salto en las olimpiadas. Un panel de jueces
-humanos le pone una nota del 0 al 10 considerando técnica, altura, limpieza,
+humanos le pone una nota considerando técnica, altura, limpieza,
 aterrizaje, etc. La pregunta es: **¿puede una computadora mirar el mismo video
 y poner una nota similar a la del juez humano?**
 
@@ -42,301 +42,226 @@ de hospital de 50.000 dólares. Sirve, pero no puedes tener una en casa.
 parecida al modelo grande pero que pueda correr en un laptop común o incluso
 un teléfono.
 
-## 3. La idea original de la propuesta
+## 3. La idea de la propuesta
 
-En el mundo del aprendizaje automático (*machine learning*), cuando tienes
-un modelo grande y muy bueno y quieres uno pequeño y rápido, existe una
-técnica clásica llamada **destilación de conocimiento**
-(*knowledge distillation*, KD).
+En lugar de proponer un método nuevo y complejo, esta tesis explora una
+hipótesis directa pero importante: **¿qué pasa si simplemente armamos un
+buen pipeline de entrenamiento usando arquitecturas livianas modernas?**
 
-Funciona así:
+Hace cinco años, los modelos livianos (las redes pequeñas) eran claramente
+peores que los grandes. La literatura aceptaba eso como un hecho y proponía
+distintos trucos para acortar la distancia. Pero el mundo del aprendizaje
+automático ha cambiado mucho desde entonces:
 
-- El modelo grande se llama **Teacher** (maestro).
-- El modelo pequeño se llama **Student** (estudiante).
-- El Student se entrena mirando lo que hace el Teacher e intentando imitarlo.
+- Los pesos pre-entrenados que vienen con las librerías (PyTorch 2024) son
+  considerablemente mejores que los de 2019.
+- Optimizadores modernos como AdamW convergen mejor.
+- Programar la tasa de aprendizaje con curva cosenoidal mejora resultados.
+- Entrenar con precisión mixta y acumulación de gradientes permite usar
+  tarjetas gráficas modestas.
 
-La idea es que el Student aprenda no sólo la respuesta correcta, sino
-también "cómo razona" el Teacher. En teoría, el Student resulta mejor que
-si se entrenara solo.
-
-**La propuesta original de la tesis** era: aplicar destilación de
-conocimiento con tres tipos de imitación simultáneas:
-
-1. **Imitar la respuesta final** (el puntaje que asigna el Teacher).
-2. **Imitar dónde mira** (en qué parte del video enfoca la atención).
-3. **Imitar cómo procesa el tiempo** (qué secuencias de imágenes considera importantes).
-
-El modelo Teacher elegido: **I3D**, un modelo 3D profundo famoso en la
-literatura (año 2017, sigue siendo referencia).
-
-Los modelos Student elegidos: **TSM-MobileNetV2** y **MobileNetV3**, dos
-arquitecturas ligeras que sí caben en un teléfono.
+Junto, todo esto puede haber cambiado el panorama. La tesis se pregunta:
+**¿siguen siendo necesarios los trucos extra, o un simple pipeline moderno
+ya basta?**
 
 ## 4. Conceptos clave (mini-glosario antes de seguir)
 
-**Pipeline:** una tubería de procesamiento. En programación, significa una
-secuencia de pasos que transforman datos crudos hasta un resultado final.
-Por ejemplo: leer un video → extraer cuadros → normalizar colores →
-entrar al modelo → salir un puntaje. Cada paso es un segmento del
-"pipeline".
+**Pipeline:** una tubería de procesamiento. En programación, una secuencia
+de pasos que transforman datos crudos hasta un resultado final. Por
+ejemplo: leer un video → extraer cuadros → normalizar colores → entrar al
+modelo → salir un puntaje.
 
-**Framework:** un "armazón" o conjunto de componentes reutilizables que,
-juntos, permiten hacer algo. A diferencia de una sola técnica, un framework
-permite configurar distintos escenarios. En esta tesis, el framework
-incluye: los modelos (Teacher y Students), las tres pérdidas de
-destilación, el pipeline de datos, y los scripts de entrenamiento y
-evaluación. Todo esto junto es "el framework".
-
-**Modelo:** en el contexto de esta tesis, es una red neuronal artificial:
-una función matemática con millones de parámetros que se "entrenan" con
-ejemplos hasta que aprende a realizar una tarea.
+**Modelo:** una red neuronal artificial: una función matemática con
+millones de parámetros que se "entrenan" con ejemplos hasta que aprende
+a realizar una tarea.
 
 **Entrenar un modelo:** mostrarle miles de ejemplos (video + puntaje del
 juez) y dejar que ajuste sus parámetros internos hasta que, dado un video
 nuevo, prediga un puntaje razonable.
 
-**Dataset:** colección de videos ya etiquetados (es decir, con el puntaje
-del juez ya conocido). Sirven para entrenar y evaluar modelos.
+**Dataset:** colección de videos ya etiquetados (con el puntaje del juez
+ya conocido).
 
-**FLOPs (Floating Point Operations):** la cantidad de operaciones
-matemáticas que una computadora hace para procesar un ejemplo. Cuanto más
-FLOPs, más tiempo y energía consume.
+**Teacher / Student:** en aprendizaje, un modelo grande (Teacher) puede
+"enseñar" a uno pequeño (Student). En esta tesis, los Teachers son I3D
+(2017) y SlowFast (2019), modelos grandes y precisos. Los Students son
+TSM-MobileNetV2 y MobileNetV3, modelos pequeños que sí caben en un
+teléfono.
 
-**Latencia:** el tiempo que tarda un modelo en dar su respuesta después
-de ver el video. Se mide en milisegundos.
+**Destilación de Conocimiento (KD):** la técnica clásica para que un
+Student aprenda de un Teacher imitando su comportamiento interno. Esta
+tesis evalúa si la KD sigue siendo necesaria con los pipelines modernos.
+
+**FLOPs:** la cantidad de operaciones matemáticas que una computadora hace
+para procesar un ejemplo. Cuanto más FLOPs, más tiempo y energía consume.
+
+**Latencia:** el tiempo que tarda un modelo en dar su respuesta.
 
 **SRCC / PLCC / MAE:** tres formas de medir qué tan bueno es el modelo.
-Todas comparan el puntaje que da el modelo contra el puntaje del juez
-humano. SRCC y PLCC van de 0 a 1 (más alto = mejor); MAE es el error
-promedio (más bajo = mejor). SRCC = 0.9 significa que el modelo ordena
-los videos casi igual que el juez humano.
+SRCC = 0.9 significa que el modelo ordena los videos casi igual que el
+juez humano.
 
-**Cross-domain:** entrenar el modelo con videos de un tipo (por ejemplo,
-clavados olímpicos) y probarlo en otro tipo diferente (por ejemplo, tareas
-de cirugía). Mide qué tan "generalista" es el modelo.
+**Pre-entrenamiento ImageNet:** los pesos iniciales de la red, aprendidos
+sobre un dataset gigante de imágenes de objetos cotidianos. Usar estos
+pesos como punto de partida es una práctica estándar.
+
+**Cross-domain:** entrenar el modelo con videos de un tipo (clavados) y
+probarlo en otro (cirugía), sin re-entrenar.
 
 ## 5. El proceso paso a paso
 
-La tesis se ejecutó en siete fases. Aquí va el resumen ejecutivo de cada
-una:
+La tesis se desarrolló en varias fases. Resumen ejecutivo:
 
-### Fase 1 — Preparación del entorno
+### Preparación
 
-Se instaló el software necesario (Python, PyTorch, librerías de visión por
+Se instaló el software (Python, PyTorch, librerías de visión por
 computadora) en un laptop con tarjeta gráfica NVIDIA RTX 3060 Mobile (6 GB
-de memoria de video). Se armó la estructura de carpetas del proyecto y se
-escribieron las primeras pruebas automáticas para asegurar que todo
-funcionara.
+de memoria de video). Se armó la estructura de carpetas y se escribieron
+las primeras pruebas automáticas.
 
-### Fase 2 — Datos
+### Datos
 
-Se descargaron tres colecciones de videos con sus respectivas
-puntuaciones:
+Se descargaron y procesaron tres colecciones de videos:
 
-- **AQA-7:** 1.106 videos de siete deportes distintos (clavados, gimnasia,
-  esquí, snowboard, patinaje, etc.). Es el dataset principal.
-- **MTL-AQA:** 1.412 videos de clavados especializados desde trampolín y
-  plataforma.
+- **AQA-7:** ~1.106 videos de siete deportes (clavados, gimnasia, esquí,
+  snowboard, patinaje, etc.). Es el dataset principal.
+- **MTL-AQA:** 1.412 videos de clavados especializados.
 - **JIGSAWS:** 206 grabaciones de cirujanos haciendo tareas básicas
   (suturar, anudar, pasar aguja) en un robot quirúrgico *da Vinci*.
 
-Cada video se pasó por un "pipeline de preprocesamiento": extracción de 64
-cuadros representativos, redimensionado a 224×224 píxeles, normalización
-de colores y guardado en un formato rápido de cargar. Esto resultó en
-unos 50 GB de datos listos para entrenar.
+### Construcción del pipeline
 
-### Fase 3 — Construcción de los modelos
+Se programaron las redes neuronales:
 
-Se programaron las tres redes neuronales:
+- **I3D** y **SlowFast** (Teachers grandes, sólo de referencia).
+- **TSM-MobileNetV2** y **MobileNetV3** (Students pequeños, la propuesta).
 
-- **I3D** (Teacher, 27 millones de parámetros): modelo 3D profundo.
-- **TSM-MobileNetV2** (Student 1, 2,2 millones de parámetros): red
-  móvil con un truco para procesar el tiempo.
-- **MobileNetV3** (Student 2, 3 millones de parámetros): red móvil más
-  moderna pero sin el truco temporal.
+También se programó el código que entrena, evalúa y mide eficiencia.
 
-También se implementaron las tres pérdidas de la destilación (regresión,
-atención, alineación temporal) y el código que las combina.
+### Entrenamiento y evaluación
 
-### Fase 4 — Motor de entrenamiento
+Se entrenaron los modelos en los tres datasets, con réplicas en distintas
+semillas aleatorias en el dataset principal para verificar estabilidad. Se
+midieron las brechas de precisión y la eficiencia (FLOPs, latencia).
 
-Se programó el "Trainer": el código que ejecuta el bucle de entrenamiento
-(mostrar ejemplos, ajustar los parámetros, medir el progreso, detenerse
-cuando ya no mejora, guardar el mejor resultado).
+### Ablaciones
 
-### Fase 5 — Entrenamientos
+Para entender por qué el pipeline funciona, se hicieron experimentos
+quitando una pieza a la vez:
 
-Se entrenaron 15 modelos en total, en orden:
+- **Sin pre-entrenamiento ImageNet:** ¿qué tanto cambia el resultado?
+- **Sin componente temporal explícito (TSM):** ¿qué tanto aporta?
 
-1. **Tres Teacher I3D** (uno por dataset): 1--3 horas cada uno en el laptop.
-2. **Seis Students sin destilación** (dos arquitecturas × tres datasets):
-   la línea base.
-3. **Seis Students con destilación** aplicando la propuesta completa: los
-   experimentos principales.
+### Análisis marginal de la destilación
 
-Durante esta fase se encontraron y resolvieron varios problemas técnicos
-(memoria de video insuficiente, la regularización BatchNorm se rompe con
-grupos muy pequeños, errores numéricos en un dataset específico). Cada
-problema se documentó con su causa y solución en una "bitácora" interna.
-
-### Fase 6 — Evaluación
-
-- **Evaluación dentro del mismo dataset** (train y test del mismo
-  dominio): se rellenaron las tablas principales de la tesis.
-- **Evaluación cruzada** (cross-domain): se probó cada modelo en un
-  dataset distinto al de entrenamiento, sin ajuste adicional.
-- **Visualización Grad-CAM:** se generaron 15 imágenes que muestran
-  visualmente "dónde mira" cada modelo en el video. Esto permite
-  interpretar qué está aprendiendo.
-
-### Fase 7 — Documento final
-
-Se volcaron todos los números reales en el documento LaTeX de la tesis y
-se reformuló la narrativa para reflejar lo que efectivamente se encontró.
+Como complemento, se probó añadir destilación de conocimiento sobre el
+pipeline para ver si aporta valor adicional.
 
 ## 6. Los resultados
 
-Cuando el trabajo terminó, los números contaron una historia distinta a
-la esperada:
+### El pipeline liviano cierra la brecha frente a los Teachers
 
-### Lo que sí funcionó muy bien
+| Modelo | SRCC en AQA-7 |
+|---|---|
+| SlowFast (Teacher 3D moderno) | 0,9158 |
+| I3D (Teacher 3D histórico) | 0,9052 |
+| **TSM-MobileNetV2 (pipeline propuesto)** | **0,9021 ± 0,005** |
+| **MobileNetV3 (pipeline propuesto)** | **0,8907 ± 0,005** |
 
-**Los modelos Students resultaron casi tan buenos como el Teacher, incluso
-sin destilación:**
+La brecha entre el pipeline liviano y el Teacher 3D moderno es **menor a
+0,025** (apenas 2,5%) y se mantiene robusta entre semillas (la
+desviación estándar es de sólo 0,005). En los otros dos datasets (clavados
+especializados y cirugía robótica) la brecha es similar o incluso menor.
 
-| Dataset | Teacher (I3D) | Student baseline | Diferencia |
+### Es mucho más eficiente
+
+| Modelo | Parámetros | FLOPs | Latencia |
 |---|---|---|---|
-| AQA-7 | 0,9052 | 0,8968 | apenas 0,008 |
-| MTL-AQA | 0,8869 | 0,8804 | apenas 0,007 |
-| JIGSAWS | 0,8364 | 0,8368 | ¡el Student es mejor! |
+| I3D | 27 M | 228 G | 134 ms |
+| TSM-MobileNetV2 | **2,2 M** | **20 G** | **54 ms** |
+| MobileNetV3 | **3,0 M** | **14 G** | **40 ms** |
 
-**Y son mucho más eficientes:**
+Los Students hacen **menos del 9% del trabajo** del Teacher I3D y
+responden **3 veces más rápido**.
 
-- El Student hace 14 operaciones por cada 228 que hace el Teacher
-  (**94 % menos trabajo**).
-- Responde en 40 ms por video vs 134 ms del Teacher
-  (**3 veces más rápido**).
+### Las ablaciones cuentan una historia interpretable
 
-Eso significa: **un modelo que sí puede correr en un teléfono o en un
-dispositivo embebido, con precisión casi idéntica al modelo grande.**
+- **Sin pre-entrenamiento ImageNet:** el SRCC cae 3 puntos. El
+  pre-entrenamiento es el componente más importante del pipeline.
+- **Sin módulo temporal (TSM):** el SRCC cae 1 punto. El componente
+  temporal aporta menos de lo que se esperaría.
 
-### Lo que no funcionó como se esperaba
+Conclusión: el pipeline funciona por **dos componentes identificables**, no
+por magia. La mayor parte del rendimiento viene del pre-entrenamiento; el
+TSM aporta una fracción menor pero positiva.
 
-**La destilación de conocimiento (la propuesta original) no aportó lo
-esperado.** De seis combinaciones (dos arquitecturas × tres datasets),
-sólo una mejoró con destilación:
+### La destilación de conocimiento, sorprendentemente, no aporta
 
-- MobileNetV3 en AQA-7: mejoró de 0,885 a **0,925** (+0,04). ✅
+Cuando se añade destilación de conocimiento sobre el pipeline ya fuerte,
+sólo 1 de 6 configuraciones mejora; las otras 5 empeoran, algunas mucho.
 
-En los otros cinco casos la destilación empeoró ligeramente el
-rendimiento, o lo empeoró mucho en el caso más extremo (TSM-MobileNetV2
-en cirugía, donde el modelo se volvió prácticamente inútil).
-
-### Por qué ocurrió esto
-
-Al analizar los resultados, surgieron dos explicaciones:
-
-1. **Los modelos livianos modernos ya son muy buenos.** Los pesos iniciales
-   que vienen con PyTorch (año 2024) son considerablemente mejores que los
-   de 2019 cuando se escribieron los papers originales que motivaron esta
-   tesis. El "problema" que la destilación pretendía resolver ya casi no
-   existe.
-
-2. **La destilación interfiere con Students que ya modelan tiempo.** El
-   TSM-MobileNetV2 tiene un mecanismo interno para procesar secuencias
-   temporales. Cuando se le obliga a imitar también la forma en que el
-   Teacher procesa el tiempo, las dos señales entran en conflicto y el
-   modelo termina confundido. En cambio, MobileNetV3 no tiene mecanismo
-   temporal propio, así que la guía del Teacher le sirve.
+**Lectura honesta:** la destilación parece **innecesaria** cuando el
+pipeline ya está bien construido. Esto cuestiona la premisa de la
+literatura previa, que suponía que la destilación era indispensable para
+cerrar la brecha entre Teacher y Student.
 
 ### Cross-domain
 
-Cuando un modelo entrenado con videos de un dominio se prueba en otro
-dominio, los resultados fueron claros:
+- **Clavados → Multi-deporte:** transferencia parcial (SRCC ~0,55).
+  Funciona porque ambos son deportes.
+- **Deporte → Cirugía:** falla (SRCC ~0). Los dominios son demasiado
+  distintos visualmente para una transferencia automática.
 
-- **Clavados (MTL-AQA) → Multi-deporte (AQA-7):** se transfiere
-  parcialmente (puntaje ~0,55). Ambos son deportes, así que hay cierta
-  similitud.
-- **Deporte (AQA-7) → Cirugía (JIGSAWS):** falla completamente. Los
-  dominios son demasiado distintos visualmente como para transferir sin
-  re-entrenar.
+## 7. ¿Cómo se interpretan estos resultados como tesis?
 
-## 7. ¿Cómo se convirtieron estos resultados en una tesis "positiva"?
+La tesis aporta tres conclusiones positivas y empíricamente sólidas:
 
-Aquí está el giro importante: en lugar de presentar el trabajo como
-"la propuesta original no funcionó", se reformuló en tres contribuciones
-positivas y verdaderas:
+### Contribución 1 — Un pipeline liviano que funciona
 
-### Contribución 1 — Un sistema eficiente de AQA para dispositivos con recursos limitados
+Un pipeline moderno bien construido (TSM-MobileNetV2 o MobileNetV3 con
+pre-entrenamiento, AdamW, cosine annealing, AMP, gradient accumulation)
+**cierra la brecha frente al Teacher 3D moderno** (SlowFast) a menos del
+2,5% de SRCC, usando el 9% de los FLOPs. Esto resuelve el problema
+práctico del título: AQA en dispositivos con recursos limitados.
 
-Se demuestra que arquitecturas ligeras modernas, bien inicializadas y
-bien entrenadas, **alcanzan casi la misma precisión que el Teacher I3D
-usando menos del 10 % de sus operaciones**. Eso resuelve el problema
-práctico del título de la tesis.
+### Contribución 2 — Componentes identificables
 
-### Contribución 2 — Caracterización de cuándo la destilación aporta valor
+Las ablaciones muestran que el rendimiento del pipeline tiene dos
+fuentes claras: el pre-entrenamiento ImageNet (~3 puntos SRCC) y el módulo
+TSM (~1 punto adicional). El pipeline no es una caja negra; es una
+propuesta interpretable y reproducible.
 
-Es una contribución científica: se muestra empíricamente que la
-destilación espacio-temporal **sí funciona pero bajo condiciones
-específicas** (Student puramente espacial + dominio rico). Esto es una
-**guía accionable para la comunidad**: en qué casos vale la pena aplicar
-KD y en qué casos es perjudicial.
+### Contribución 3 — La destilación de conocimiento es innecesaria
 
-### Contribución 3 — Límites claros para la generalización cross-domain
+Cuando la línea base liviana es fuerte, la destilación no aporta valor
+consistente y puede degradar. Esto cuestiona la premisa heredada de la
+literatura previa y replantea la prioridad de futuras propuestas en AQA
+eficiente.
 
-Se documenta qué transferencias entre dominios funcionan y cuáles
-requieren estrategias adicionales. Esto abre líneas concretas de trabajo
-futuro (por ejemplo, destilación multimodal o adaptación de dominio para
-saltar de deporte a cirugía).
+## 8. ¿Qué significa en la vida real?
 
-## 8. ¿Por qué todo esto se llama "framework" y no simplemente "modelo"?
-
-Un modelo es una red neuronal con parámetros entrenados. Esta tesis
-entrega **varios modelos** (tres Teacher, seis Students baseline, seis
-Students con KD, además de los checkpoints cross-domain), **además del
-código que los conecta**, y **además de la metodología de evaluación**.
-
-Esa combinación —modelos + pipeline de datos + mecanismos de destilación
-configurables + protocolo de evaluación + mediciones de eficiencia— es lo
-que se llama **framework**: un armazón reutilizable que permite repetir,
-extender o modificar el experimento sin rearmar todo desde cero.
-
-Cualquier persona con el repositorio de la tesis puede:
-
-1. Cambiar el dataset (añadir uno nuevo) y todo el pipeline se adapta.
-2. Cambiar la arquitectura del Student (probar ResNet o EfficientNet) sin
-   reescribir el entrenador.
-3. Apagar o encender cualquiera de las tres pérdidas de destilación con un
-   archivo de configuración.
-4. Medir FLOPs y latencia con un solo comando.
-
-Ese nivel de modularidad es lo que distingue un framework de una
-implementación puntual.
+- Un fisioterapeuta podría tener una app móvil que evalúa la técnica de
+  ejercicios de rehabilitación en tiempo real, sin servidor.
+- Un entrenador deportivo en un pueblo sin buena conexión podría usar un
+  dispositivo embebido para dar feedback automático.
+- Un hospital que forma residentes quirúrgicos podría evaluar
+  automáticamente la habilidad en simuladores (con fine-tuning específico).
+- Otros investigadores pueden construir sobre este trabajo: el código y los
+  modelos están disponibles públicamente.
 
 ## 9. Resumen en tres líneas
 
-1. **Problema:** los modelos buenos para AQA son demasiado pesados para teléfonos.
-2. **Hallazgo principal:** los modelos ligeros modernos ya son muy buenos
-   sin necesidad de destilación; y cuando la destilación sí ayuda, es en un
-   nicho específico (Students sin modelado temporal en datasets ricos).
-3. **Contribución:** un framework abierto, reproducible y caracterizado
-   empíricamente que permite hacer AQA eficiente en dispositivos con
-   recursos limitados y que da una guía clara de cuándo la destilación
-   vale la pena.
-
-## 10. ¿Qué significa esto en la vida real?
-
-- Un fisioterapeuta podría tener una app móvil que evalúa la técnica de
-  ejercicios de rehabilitación en tiempo real, sin necesidad de enviar el
-  video a un servidor.
-- Un entrenador deportivo en un pueblo sin buena conexión podría usar un
-  dispositivo embebido para dar feedback automático a atletas jóvenes.
-- Un hospital que forma residentes quirúrgicos podría evaluar
-  automáticamente la habilidad en simuladores (con fine-tuning específico).
-- El código y los modelos están disponibles públicamente en GitHub, así
-  que otros investigadores pueden construir sobre este trabajo.
+1. **Problema:** los modelos buenos para AQA son demasiado pesados para
+   teléfonos.
+2. **Hallazgo principal:** un pipeline liviano moderno con prácticas
+   actuales **cierra la brecha frente a los Teachers 3D** (incluso el
+   SlowFast moderno), y la destilación de conocimiento ya no es
+   necesaria.
+3. **Contribución:** un pipeline reproducible, interpretable
+   (componentes identificados por ablación) y empíricamente caracterizado
+   que permite hacer AQA eficiente en dispositivos con recursos limitados.
 
 ---
 
-*Documento escrito como parte de la tesis de Emmanuel Samir Galdos Rodriguez
-(UCSP, 2026). Código fuente: https://github.com/emmanuelgaldos0-max/AQA\_Framework*
+*Documento escrito como parte de la tesis de Emmanuel Samir Galdos
+Rodriguez (UCSP, 2026). Código fuente: https://github.com/emmanuelgaldos0-max/AQA\_Framework*

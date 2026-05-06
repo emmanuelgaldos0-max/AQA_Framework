@@ -1,73 +1,75 @@
 \chapter{Conclusiones y Trabajos Futuros}\label{chap:conclusiones}
 
-En este capítulo se presentan las conclusiones obtenidas a partir del desarrollo de la presente tesis, organizadas de acuerdo a los objetivos específicos definidos en el Capítulo de Introducción. Asimismo, se describen los principales problemas encontrados durante el proceso de investigación, se formulan recomendaciones basadas en la experiencia adquirida y se proponen líneas de trabajo futuro.
+En este capítulo se presentan las conclusiones obtenidas a partir del desarrollo de la presente tesis, organizadas conforme a los objetivos específicos definidos en el Capítulo~1. Se describen los principales problemas encontrados, se identifican limitaciones del trabajo y se proponen líneas de investigación futura.
 
 \section{Conclusiones por Objetivos Específicos}
 
 \begin{itemize}
-    \item \textbf{Investigación del estado del arte en AQA y distilación de conocimiento:} Se realizó un análisis exhaustivo de los enfoques actuales aplicados a la Evaluación de la Calidad de Acciones (AQA), destacando avances como la distilación intermodal, la supervisión jerárquica y las técnicas multimodales vision–language. Este estudio permitió identificar brechas en el uso de arquitecturas livianas como estudiantes, así como oportunidades para transferencias más efectivas de conocimiento en escenarios con limitaciones computacionales.
-    
-    \item \textbf{Diseño de una estrategia de distilación espacio-temporal:} Se propuso una metodología que integra mecanismos de distilación de mapas de atención espacio-temporales y alineación de representaciones intermedias en el tiempo. Esta estrategia permitió al modelo estudiante replicar no solo la salida final del maestro (I3D), sino también su comportamiento interno, mejorando así la calidad del aprendizaje transferido.
-    
-    \item \textbf{Implementación de modelos Student livianos:} Se desarrollaron e implementaron versiones de TSM-MobileNetV2 y MobileNetV3, adaptadas a tareas de AQA, y se entrenaron utilizando conjuntos de datos representativos de dominios diversos: AQA-7 (deporte multi-disciplina), MTL-AQA (clavados especializados) y JIGSAWS (cirugía robótica). La metodología contempló un pipeline robusto de preprocesamiento sobre frames pre-extraídos, balanceo de datos y normalización para asegurar resultados reproducibles y comparables.
-    
-    \item \textbf{Evaluación experimental:} Los experimentos revelan un patrón matizado. Los Students sin destilación alcanzan SRCC muy cercano al Teacher (0.897, 0.880 y 0.828-0.837 frente a Teacher 0.905, 0.887 y 0.836 en AQA-7, MTL-AQA y JIGSAWS respectivamente), con una brecha menor a 0.01 en los tres dominios. La destilación propuesta mejora al Student sólo en una de las seis configuraciones (MobileNetV3 en AQA-7, +0.040 SRCC) y degrada el rendimiento en las arquitecturas que ya incorporan modelado temporal explícito (TSM-MobileNetV2). En eficiencia, los Students reducen los FLOPs en más del 91\% y la latencia entre 2.5$\times$ y 3.4$\times$ respecto al Teacher, validando la viabilidad para despliegue embebido.
+    \item \textbf{OE1 — Estado del arte:} Se realizó un análisis crítico de los enfoques actuales en \ac{AQA} y de las técnicas de compresión y destilación aplicadas a video. Se identificó que la literatura previa parte de la suposición implícita de una brecha sustancial entre \textit{Teachers} 3D pesados y \textit{Students} livianos, suposición formulada en un contexto donde los pesos preentrenados, los optimizadores y las prácticas de entrenamiento eran menos maduros.
 
-    \item \textbf{Generalización cruzada y análisis cualitativo:} La transferencia cruzada MTL-AQA $\to$ AQA-7 logra un SRCC parcial (0.53--0.55) sin fine-tuning; la transferencia deporte $\to$ cirugía (AQA-7 $\to$ JIGSAWS) falla (SRCC cercano a cero). La destilación no mejora la generalización en ninguna dirección. Los mapas Grad-CAM muestran que los Students con destilación imitan cualitativamente el foco espacial del Teacher, aunque esta imitación no siempre se traduce en mejores métricas globales.
+    \item \textbf{OE2 — Pipeline reproducible:} Se construyó un \textit{pipeline} liviano basado en TSM-MobileNetV2 y MobileNetV3, inicializados con pesos preentrenados de ImageNet y entrenados con prácticas modernas (AdamW, programación cosenoidal, precisión mixta, acumulación de gradientes). El \textit{pipeline} es reproducible (semillas explícitas, configuraciones \texttt{YAML}) y se aplica de forma uniforme a tres dominios.
+
+    \item \textbf{OE3 — Cuantificación de la brecha:} En AQA-7, el \textit{pipeline} liviano alcanza \ac{SRCC} de $0.9021 \pm 0.005$ (TSM-MobileNetV2) y $0.8907 \pm 0.005$ (MobileNetV3) sobre tres semillas, frente a $0.9052$ (\ac{I3D}) y $0.9158$ (SlowFast-R50). La brecha respecto a ambos \textit{Teachers} 3D es menor a $0.025$ \ac{SRCC} y se mantiene robusta entre semillas. En MTL-AQA y JIGSAWS la brecha es similar ($<0.01$ \ac{SRCC}), confirmando que el resultado es estable en dominios de naturaleza distinta.
+
+    \item \textbf{OE4 — Ablaciones de componentes:} El preentrenamiento ImageNet aporta $\sim 0.031$ \ac{SRCC} sobre el backbone aleatorio (E6), constituyendo el componente más importante del \textit{pipeline}. El módulo Temporal Shift (\ac{TSM}) aporta $\sim 0.010$ \ac{SRCC} adicional (E7), beneficio modesto pero positivo. El \textit{pipeline} se sostiene en dos componentes identificables: preentrenamiento ($\sim 3$ puntos) y modelado temporal eficiente ($\sim 1$ punto).
+
+    \item \textbf{OE5 — Eficiencia computacional:} Los \textit{Students} usan menos del $9\%$ de los \ac{FLOPs} del \textit{Teacher} \ac{I3D} (TSM-MobileNetV2: 20.0~G; MobileNetV3: 14.3~G; vs 228.3~G del \ac{I3D}), con parámetros aproximadamente $10\times$ menores y latencia de inferencia entre $2.5$ y $3.4\times$ menor. MobileNetV3 alcanza 39.9~ms por clip de 64 \textit{frames} en RTX 3060 Mobile, habilitando aplicaciones en tiempo real.
+
+    \item \textbf{OE6 — Límites de aplicabilidad:} La transferencia cruzada MTL-AQA $\to$ AQA-7 obtiene \ac{SRCC} parcial ($\sim 0.55$); la transferencia AQA-7 $\to$ JIGSAWS falla (\ac{SRCC} cercano a cero). El análisis marginal de la destilación muestra que, sobre la línea base liviana fuerte, la \ac{KD} no aporta valor consistente: sólo 1 de 6 configuraciones (MobileNetV3 + AQA-7) mejora con \ac{KD}, mientras que las otras cinco degradan, con casos severos en JIGSAWS. Esto delimita el alcance del \textit{pipeline}: efectivo dentro del dominio entrenado, no universal.
 \end{itemize}
 
-\noindent \textbf{Conclusión general:}
-La presente tesis aporta tres resultados principales, todos positivos y defendibles:
+\section{Conclusión General}
 
-\textbf{Primero}, se demuestra empíricamente que un \textit{pipeline} moderno de Students livianos (MobileNet+TSM inicializados con pesos ImageNet, entrenados con AdamW, cosine schedule, AMP y \textit{gradient accumulation}) alcanza correlaciones SRCC a menos de 0.01 del Teacher I3D utilizando el 9\% de sus FLOPs, lo que habilita despliegue en dispositivos embebidos con precisión cercana al estado del arte. Este resultado es reproducible en los tres dominios evaluados.
+La presente tesis sostiene tres conclusiones positivas y empíricamente respaldadas:
 
-\textbf{Segundo}, se propone y valida un \textit{framework} de destilación espacio-temporal selectiva: al caracterizar experimentalmente la interacción entre la arquitectura del Student y las pérdidas auxiliares, se identifica un régimen claro donde el KD mejora el rendimiento (MobileNetV3 sobre AQA-7, +0.040 SRCC) y se proporcionan directrices para aplicarlo de forma eficaz. Este análisis sistemático constituye una contribución que la literatura previa no había documentado.
+\textbf{Primero}, un \textit{pipeline} moderno de \textit{Students} livianos (TSM-MobileNetV2 y MobileNetV3 con preentrenamiento ImageNet, AdamW, cosine annealing, AMP y \textit{gradient accumulation}) alcanza \ac{SRCC} a menos de $0.025$ del \textit{Teacher} 3D moderno SlowFast-R50, y a menos de $0.015$ del \ac{I3D}, utilizando el $9\%$ de sus \ac{FLOPs}. Este resultado es estable entre semillas (std $\approx 0.005$) y reproducible en tres dominios (AQA-7, MTL-AQA, JIGSAWS).
 
-\textbf{Tercero}, el framework revela los límites de la destilación para generalización cross-domain: la transferencia dentro del dominio deportivo (MTL-AQA $\to$ AQA-7) es parcialmente efectiva sin \textit{fine-tuning}, mientras que la transferencia a dominios radicalmente distintos (deporte $\to$ cirugía) requiere estrategias adicionales, definiendo una agenda clara de trabajo futuro en destilación multimodal y adaptación de dominio.
+\textbf{Segundo}, las ablaciones identifican los componentes responsables del rendimiento del \textit{pipeline}: el preentrenamiento ImageNet (E6, $\sim 3$ puntos de \ac{SRCC}) y el módulo Temporal Shift (E7, $\sim 1$ punto adicional). Esto convierte el \textit{pipeline} en una propuesta interpretable: su aporte no es un efecto agregado opaco, sino la contribución cuantificable de elementos identificables.
 
-En conjunto, la tesis entrega un \textit{framework} reproducible, eficiente y empíricamente caracterizado para AQA en dispositivos con recursos limitados, junto con una guía accionable sobre cuándo y cómo la destilación espacio-temporal aporta valor en este contexto.
+\textbf{Tercero}, el análisis marginal de la destilación de conocimiento (\textbf{OE6}) muestra que, cuando el \textit{Student} se entrena con un \textit{pipeline} fuerte, la \ac{KD} no aporta valor consistente y puede incluso degradar el rendimiento. Esto cuestiona la premisa heredada de la literatura previa---según la cual el cierre de brecha entre \textit{Teacher} y \textit{Student} requiere destilación---y replantea la prioridad de futuras propuestas en \ac{AQA} eficiente.
+
+En conjunto, la tesis entrega un \textit{pipeline} liviano reproducible, eficiente y empíricamente caracterizado para \ac{AQA} en dispositivos con recursos limitados, con sus componentes y sus límites de aplicabilidad claramente delimitados.
+
+\section{Limitaciones del trabajo}
+
+Para una interpretación honesta del aporte se enumeran a continuación las principales limitaciones, cada una de las cuales abre una línea concreta de trabajo futuro:
+
+\begin{itemize}
+    \item \textbf{Réplicas por semilla limitadas a un dataset.} Las réplicas con tres semillas se ejecutaron únicamente sobre AQA-7 (dataset principal). En MTL-AQA y JIGSAWS los resultados se reportan con semilla 42 por costo computacional acumulado. Los hallazgos cuantitativos en esos dos dominios deben leerse considerando esta limitación.
+
+    \item \textbf{Sin validación en hardware embebido real.} La medición de eficiencia se realizó en RTX 3060 Mobile como aproximación a hardware de bajo costo, pero no se ejecutó el modelo en plataformas embebidas reales (Jetson Nano, dispositivos móviles). La validación en tales plataformas, incluyendo consumo energético y memoria de \textit{runtime}, queda como trabajo futuro.
+
+    \item \textbf{Restricciones de memoria que afectaron el régimen de entrenamiento.} El \textit{batch size} físico de 1--2 (impuesto por los 6~GB de \ac{VRAM}) hizo necesario congelar las estadísticas de \textit{BatchNorm} del \textit{Student} durante el entrenamiento con \ac{KD}. Aunque preserva la estabilidad numérica, este procedimiento podría sesgar la evaluación del análisis marginal de \ac{KD} frente a configuraciones con mayor capacidad de hardware.
+
+    \item \textbf{Generalización cross-domain limitada al régimen \textit{zero-shot}.} La transferencia AQA-7 $\to$ JIGSAWS se evaluó sin \textit{fine-tuning}; el resultado negativo no descarta que la destilación o el \textit{pipeline} puedan funcionar tras adaptación de dominio.
+
+    \item \textbf{Subconjunto del paisaje de Students livianos.} Se evaluaron dos arquitecturas (TSM-MobileNetV2 y MobileNetV3); la generalización del hallazgo a otras familias (EfficientNet-Video, X3D-S, MoViNet) requiere validación adicional.
+\end{itemize}
 
 \section{Problemas encontrados}
 
-Durante el desarrollo de esta investigación se identificaron diversos desafíos que podrían ser de utilidad para futuros trabajos en esta línea:
-
 \begin{itemize}
-    \item \textbf{Desbalance de clases y distribución de etiquetas:} Los datasets empleados presentan concentraciones de ejemplos en rangos medios de puntuación, dificultando el aprendizaje de ejecuciones excepcionales (muy buenas o muy malas). Esto afectó la capacidad del modelo para distinguir los extremos del espectro de calidad.
-    
-    \item \textbf{Variabilidad en las condiciones visuales:} Se observaron casos con iluminación deficiente, ángulos de cámara extremos o ruido visual, lo que afectó tanto la predicción como la interpretabilidad de los mapas de atención generados.
-    
-    \item \textbf{Limitaciones del hardware de entrenamiento:} La ejecución de modelos 3D (como I3D) y el cálculo de distancias entre representaciones internas implicaron una alta demanda de memoria. Esto obligó a reducir tamaños de batch y emplear técnicas como gradiente acumulativo para mantener la estabilidad del entrenamiento.
-    
-    \item \textbf{Ausencia de benchmarks estandarizados para KD en AQA:} La falta de protocolos unificados en la literatura dificultó la comparación directa con trabajos previos, haciendo necesario definir un pipeline experimental propio.
-\end{itemize}
+    \item \textbf{Desbalance de clases y distribución de etiquetas:} los datasets empleados presentan concentraciones en rangos medios de puntuación. Esto afectó la capacidad del modelo para distinguir los extremos del espectro de calidad.
 
-\section{Recomendaciones}
+    \item \textbf{Variabilidad en las condiciones visuales:} se observaron casos con iluminación deficiente, ángulos de cámara extremos o ruido visual.
 
-A partir del aprendizaje obtenido durante esta tesis, se sugieren las siguientes recomendaciones:
+    \item \textbf{Limitaciones del hardware de entrenamiento:} la ejecución de modelos 3D (\ac{I3D}, SlowFast) y el cálculo de pérdidas de destilación implicaron una alta demanda de memoria. Esto obligó a reducir tamaños de \textit{batch} y emplear acumulación de gradientes.
 
-\begin{itemize}
-    \item Al aplicar distilación en tareas de video, se recomienda no limitarse a la salida final del modelo, sino considerar también características intermedias y patrones de atención, lo cual enriquece la transferencia de conocimiento.
-    
-    \item Es aconsejable combinar distilación supervisada con estrategias de aumento de datos y técnicas de regularización, como dropout o normalización por capas, para mejorar la capacidad de generalización.
-    
-    \item Se recomienda utilizar herramientas de visualización como Grad-CAM no solo para análisis cualitativos, sino como guía para seleccionar mejores arquitecturas o detectar sesgos en los datos.
-    
-    \item Es importante realizar evaluaciones cruzadas entre dominios para verificar si el modelo ha aprendido representaciones verdaderamente generalizables o si depende demasiado del dominio de entrenamiento.
+    \item \textbf{Ausencia de benchmarks estandarizados para AQA eficiente:} la falta de protocolos unificados dificultó la comparación directa con trabajos previos, haciendo necesario definir un \textit{pipeline} experimental propio.
 \end{itemize}
 
 \section{Trabajos futuros}
 
-Con base en los hallazgos y limitaciones identificadas, se proponen las siguientes líneas de investigación futura:
-
 \begin{itemize}
-    \item \textbf{Distilación multimodal}: Investigar la transferencia de conocimiento desde modelos que integren modalidades adicionales (como texto, audio o pose 3D) hacia estudiantes unimodales (RGB), para capturar información semántica rica sin aumentar la complejidad en inferencia.
-    
-    \item \textbf{Distilación auto-supervisada}: Explorar el uso de auto-distilación con supervisión jerárquica en modelos livianos, lo que podría reducir la dependencia de un modelo Teacher y hacer más accesible el entrenamiento.
-    
-    \item \textbf{Implementación en dispositivos reales}: Validar los modelos distilados en plataformas embebidas (p.ej. Jetson Nano, Raspberry Pi), midiendo su desempeño en condiciones reales de ejecución, incluyendo consumo energético, latencia y estabilidad.
-    
-    \item \textbf{Aplicación en nuevos dominios}: Ampliar la evaluación a contextos fuera del deporte, como la rehabilitación física o la educación, para comprobar la robustez del enfoque propuesto en diferentes entornos.
-    
-    \item \textbf{Análisis explicable de decisiones}: Integrar técnicas de interpretabilidad que permitan entender mejor por qué un modelo predice cierta puntuación, facilitando su adopción en entornos sensibles como el análisis clínico o el juicio técnico profesional.
-\end{itemize}
+    \item \textbf{Score Distribution Learning} adaptado al \textit{pipeline} liviano: experimentos preliminares de variantes de regresión distribucional (\textit{Uncertainty-aware Score Distribution Learning}, Tang et al. 2020) mostraron mejoras de hasta $+0.053$ \ac{SRCC} en TSM-MobileNetV2 + JIGSAWS sobre la línea base liviana, sugiriendo que el reformulado del objetivo de regresión es una dirección promisoria.
 
+    \item \textbf{Adaptación de dominio} para resolver el fracaso de transferencia AQA-7 $\to$ JIGSAWS: explorar técnicas como CORAL, MMD o adaptación adversarial.
+
+    \item \textbf{Réplicas por semilla en MTL-AQA y JIGSAWS} para extender la robustez estadística más allá del dataset principal.
+
+    \item \textbf{Implementación en dispositivos reales} (Jetson Nano, móviles) midiendo consumo energético, latencia real y memoria de \textit{runtime}.
+
+    \item \textbf{Aplicación en nuevos dominios} (rehabilitación física, educación física, evaluación de gestos motores en condiciones clínicas).
+
+    \item \textbf{Análisis explicable de decisiones} mediante técnicas de interpretabilidad para facilitar adopción en entornos sensibles como análisis clínico o juicio técnico profesional.
+\end{itemize}

@@ -1,0 +1,20 @@
+extends: base.yaml
+
+model:
+  name: mobilenetv3_large
+  pretrained_on: imagenet
+
+train:
+  batch_size: 2
+  grad_accum_steps: 8
+  lr: 3.0e-4
+  epochs: 50
+  early_stop_patience: 12
+
+proto:
+  num_coarse: 10
+  num_fine: 5
+  alpha_fine: 0.5
+  dropout: 0.5
+  score_min: 0.0
+  score_max: 1.0

@@ -1,0 +1,16 @@
+extends: base.yaml
+
+# E6 — Ablación sin ImageNet pretrain.
+# TSM-MobileNetV2 desde scratch, sin pesos pre-entrenados.
+
+model:
+  name: tsm_mobilenetv2
+  pretrained: false
+  pretrained_on: null
+
+train:
+  batch_size: 2
+  grad_accum_steps: 8
+  lr: 3.0e-4
+  epochs: 80               # más epochs porque parte de cero
+  early_stop_patience: 15

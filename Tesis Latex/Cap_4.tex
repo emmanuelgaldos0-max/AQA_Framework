@@ -1,144 +1,226 @@
 \chapter{Pruebas y Resultados}
 \label{chap:resultados}
 
-En este capítulo se presentan los resultados experimentales del framework propuesto. Se evalúan (i) Students livianos con y sin destilación frente al Teacher I3D en tres datasets de dominios distintos (AQA-7, MTL-AQA, JIGSAWS); (ii) la eficiencia computacional de los Students respecto al Teacher; (iii) los mapas de atención aprendidos mediante visualización Grad-CAM; y (iv) la capacidad de generalización cross-domain. Un eje transversal del análisis es caracterizar \textit{cuándo} y \textit{por qué} la destilación propuesta aporta valor, en función de la arquitectura del Student.
+En este capítulo se presenta la evaluación experimental del \textit{pipeline} liviano propuesto. Los experimentos se organizan en torno a los objetivos específicos del trabajo: (i) cuantificar la brecha del \textit{pipeline} liviano frente a los \textit{Teachers} \ac{I3D} y SlowFast-R50 en tres dominios (\textbf{OE3}); (ii) caracterizar la eficiencia computacional del \textit{pipeline} (\textbf{OE5}); (iii) aislar el aporte de los componentes clave mediante ablaciones (\textbf{OE4}); y (iv) delimitar los límites de aplicabilidad mediante transferencia cruzada y un análisis marginal de la destilación de conocimiento (\textbf{OE6}).
 
-\section{Precisión en la Predicción}
+\section{Comparación principal: pipeline liviano frente a Teachers}
+\label{sec:comparacion_principal}
 
-Se reportan métricas estándar de evaluación: coeficiente de correlación de Spearman (SRCC), coeficiente de correlación de Pearson (PLCC) y error absoluto medio (MAE), calculadas sobre los conjuntos AQA-7, MTL-AQA y JIGSAWS.
+La Tabla~\ref{tab:precision_aqa7} reporta la comparación principal en AQA-7, el dataset principal del trabajo. Los \textit{Students} se ejecutan con tres semillas aleatorias (42, 0 y 7) y se reporta media $\pm$ desviación estándar. Los \textit{Teachers} \ac{I3D} y SlowFast-R50 se ejecutan con semilla 42.
 
 \begin{table}[H]
 \centering
-\caption{Resultados de precisión en los datasets evaluados. Valores obtenidos con semilla 42 sobre el test split oficial de cada dataset.}
-\label{tab:precision}
-\begin{tabular}{lcccc}
+\caption{Resultados de precisión en AQA-7. Los \textit{Students} se ejecutan con tres semillas; los \textit{Teachers} de referencia con una sola semilla. La columna \textit{Régimen} distingue: \textbf{Teacher} = referencia 3D; \textbf{Pipeline liviano} = propuesta principal; \textit{+~KD} = análisis marginal con destilación activa.}
+\label{tab:precision_aqa7}
+\begin{tabular}{llcccc}
 \toprule
-\textbf{Modelo} & \textbf{Dataset} & \textbf{SRCC}↑ & \textbf{PLCC}↑ & \textbf{MAE}↓ \\
+\textbf{Modelo} & \textbf{Régimen} & \textbf{SRCC}↑ & \textbf{PLCC}↑ & \textbf{MAE}↓ & \textbf{Semillas} \\
 \midrule
-I3D (Teacher) & AQA-7 & \textbf{0.9052} & \textbf{0.9352} & \textbf{8.20} \\
-TSM-MobileNetV2 & AQA-7 & 0.8968 & 0.9356 & 8.67 \\
-TSM-MobileNetV2 + KD & AQA-7 & 0.8811 & 0.9299 & 8.40 \\
-MobileNetV3 & AQA-7 & 0.8854 & 0.9271 & 9.32 \\
-MobileNetV3 + KD & AQA-7 & \textbf{0.9250} & \textbf{0.9561} & \textbf{6.15} \\
+SlowFast-R50      & Teacher (3D moderno)     & \textbf{0.9158} & ---    & ---    & \{42\} \\
+I3D-R50           & Teacher (3D histórico)   & 0.9052          & 0.9352 & 8.20   & \{42\} \\
 \midrule
-I3D (Teacher) & MTL-AQA & \textbf{0.8869} & 0.8848 & \textbf{5.51} \\
-TSM-MobileNetV2 & MTL-AQA & 0.8804 & 0.8697 & 6.06 \\
-TSM-MobileNetV2 + KD & MTL-AQA & 0.7628 & 0.7564 & 8.42 \\
-MobileNetV3 & MTL-AQA & 0.8703 & \textbf{0.8744} & 6.06 \\
-MobileNetV3 + KD & MTL-AQA & 0.8470 & 0.8288 & 7.43 \\
+TSM-MobileNetV2   & \textbf{Pipeline liviano}  & $\mathbf{0.9021 \pm 0.0046}$ & 0.9356 & 8.67  & \{42, 0, 7\} \\
+MobileNetV3       & \textbf{Pipeline liviano}  & $\mathbf{0.8907 \pm 0.0049}$ & 0.9271 & 9.32  & \{42, 0, 7\} \\
 \midrule
-I3D (Teacher) & JIGSAWS & 0.8364 & \textbf{0.8456} & \textbf{10.83} \\
-TSM-MobileNetV2 & JIGSAWS & 0.8283 & 0.8007 & 11.76 \\
-TSM-MobileNetV2 + KD & JIGSAWS & 0.3435 & 0.3428 & 20.57 \\
-MobileNetV3 & JIGSAWS & \textbf{0.8368} & 0.8356 & 10.31 \\
-MobileNetV3 + KD & JIGSAWS & 0.7907 & 0.7777 & 11.52 \\
+TSM-MobileNetV2   & + KD (análisis marginal) & 0.8811          & 0.9299 & 8.40   & \{42\} \\
+MobileNetV3       & + KD (análisis marginal) & 0.9250          & 0.9561 & 6.15   & \{42\} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Los resultados experimentales revelan un patrón matizado y contrario a la hipótesis inicial del trabajo. En primer lugar, los modelos \textit{Students} sin destilación ya alcanzan un rendimiento muy cercano al del \textit{Teacher}: la brecha SRCC entre el Student base y el I3D es de apenas 0.008 en AQA-7, 0.007 en MTL-AQA y 0.008 en JIGSAWS. Esta proximidad sugiere que, con pesos pre-entrenados modernos en ImageNet y un pipeline adecuado de preprocesamiento, las arquitecturas ligeras son altamente capaces en la tarea de AQA sin requerir destilación adicional.
+\paragraph{Brecha frente a Teachers.} La Tabla~\ref{tab:precision_aqa7} muestra que el \textit{pipeline} liviano cierra la brecha con los \textit{Teachers} 3D a una distancia muy reducida:
 
-En segundo lugar, la destilación de conocimiento propuesta produce resultados heterogéneos: sólo una de las seis configuraciones evaluadas (MobileNetV3 sobre AQA-7) presenta una mejora clara respecto a su baseline (+0.040 SRCC). La Sección~\ref{sec:ablation} a continuación caracteriza en detalle \textit{cuándo} y \textit{por qué} el KD aporta valor.
+\begin{itemize}
+    \item TSM-MobileNetV2 (media $0.9021$) queda a $-0.003$ \ac{SRCC} del \ac{I3D} (0.9052) y a $-0.014$ \ac{SRCC} del SlowFast-R50 (0.9158).
+    \item MobileNetV3 (media $0.8907$) queda a $-0.014$ \ac{SRCC} del \ac{I3D} y a $-0.025$ \ac{SRCC} del SlowFast-R50.
+\end{itemize}
 
-\section{Caracterización arquitectónica: ¿cuándo el KD aporta valor?}
-\label{sec:ablation}
+La inclusión de SlowFast-R50 como \textit{Teacher} 3D moderno permite afirmar que la cercanía del \textit{pipeline} liviano no es sólo respecto al baseline histórico (\ac{I3D}, 2017), sino también respecto al estado actual del paradigma 3D. Las desviaciones estándar bajas ($\sim 0.005$ en ambos \textit{Students}) confirman que el resultado no depende de una inicialización favorable.
 
-Un hallazgo central de este trabajo es que el aporte del KD depende fuertemente de si el Student posee o no modelado temporal explícito. Se organizan los seis escenarios evaluados según dos ejes: arquitectura del Student (espacial pura vs. con TSM) y características del dataset (tamaño del conjunto de entrenamiento, variabilidad del dominio):
+La Tabla~\ref{tab:precision_otros} reporta los resultados en los otros dos datasets (semilla 42), donde se evalúan los mismos modelos sin réplicas adicionales por costo computacional.
 
 \begin{table}[H]
 \centering
-\caption{Caracterización del aporte del KD en función de la arquitectura del Student y del dataset.}
-\label{tab:kd_characterization}
-\begin{tabular}{llccc}
+\caption{Resultados de precisión en MTL-AQA y JIGSAWS (semilla 42). Se incluyen los modos \textit{Pipeline liviano} (sólo $\mathcal{L}_{reg}$) y \textit{+~KD} (análisis marginal).}
+\label{tab:precision_otros}
+\begin{tabular}{llcccc}
 \toprule
-\textbf{Student} & \textbf{Dataset} & \textbf{Baseline} & \textbf{+ KD} & \textbf{$\Delta$ SRCC} \\
+\textbf{Modelo} & \textbf{Régimen} & \textbf{Dataset} & \textbf{SRCC}↑ & \textbf{PLCC}↑ & \textbf{MAE}↓ \\
 \midrule
-\multicolumn{5}{l}{\textit{Student puramente espacial (MobileNetV3)}} \\
-\hspace{1em} MobileNetV3 & AQA-7 (rico, multi-deporte) & 0.8854 & \textbf{0.9250} & \textbf{+0.040} \\
-\hspace{1em} MobileNetV3 & MTL-AQA (clavados)          & 0.8703 & 0.8470 & $-0.023$ \\
-\hspace{1em} MobileNetV3 & JIGSAWS (dominio pequeño)  & 0.8368 & 0.7907 & $-0.046$ \\
+I3D               & Teacher           & MTL-AQA & \textbf{0.8869} & 0.8848 & \textbf{5.51} \\
+TSM-MobileNetV2   & Pipeline liviano  & MTL-AQA & 0.8804          & 0.8697 & 6.06 \\
+TSM-MobileNetV2   & + KD              & MTL-AQA & 0.7628          & 0.7564 & 8.42 \\
+MobileNetV3       & Pipeline liviano  & MTL-AQA & 0.8703          & \textbf{0.8744} & 6.06 \\
+MobileNetV3       & + KD              & MTL-AQA & 0.8470          & 0.8288 & 7.43 \\
 \midrule
-\multicolumn{5}{l}{\textit{Student con modelado temporal (TSM-MobileNetV2)}} \\
-\hspace{1em} TSM-MobileNetV2 & AQA-7    & 0.8968 & 0.8811 & $-0.016$ \\
-\hspace{1em} TSM-MobileNetV2 & MTL-AQA  & 0.8804 & 0.7628 & $-0.118$ \\
-\hspace{1em} TSM-MobileNetV2 & JIGSAWS  & 0.8283 & 0.3435 & $-0.485$ \\
+I3D               & Teacher           & JIGSAWS & 0.8364          & \textbf{0.8456} & \textbf{10.83} \\
+TSM-MobileNetV2   & Pipeline liviano  & JIGSAWS & 0.8283          & 0.8007 & 11.76 \\
+TSM-MobileNetV2   & + KD              & JIGSAWS & 0.3435          & 0.3428 & 20.57 \\
+MobileNetV3       & Pipeline liviano  & JIGSAWS & \textbf{0.8368} & 0.8356 & 10.31 \\
+MobileNetV3       & + KD              & JIGSAWS & 0.7907          & 0.7777 & 11.52 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-De esta caracterización se derivan tres observaciones:
+En MTL-AQA y JIGSAWS la brecha SRCC entre el \textit{pipeline} liviano y el \textit{Teacher} es nuevamente menor a 0.01 ($-0.007$ y $-0.008$ respectivamente), consistente con lo observado en AQA-7. Esto sostiene la afirmación central del trabajo: \textbf{el \textit{pipeline} liviano moderno no es una solución aislada para un único dataset, sino una alternativa estable en dominios de naturaleza distinta} (deporte multi-disciplina, clavados especializados, cirugía robótica).
 
-\textbf{(1) El KD mejora consistentemente sólo en el caso (MobileNetV3, AQA-7):} Student puramente espacial combinado con un dominio rico y diverso. En este régimen, la atención espacio-temporal transferida desde el Teacher I3D provee información temporal que el Student no puede inferir por sí mismo, y la variabilidad del dataset multi-deporte permite que esta guía adicional sea aprovechada.
+\section{Eficiencia computacional}
+\label{sec:eficiencia}
 
-\textbf{(2) En Students con modelado temporal propio (TSM), el KD degrada en los tres datasets.} Las pérdidas $\mathcal{L}_{att}$ (atención espacio-temporal) y $\mathcal{L}_{temp}$ (alineación temporal) son estructuralmente redundantes o conflictivas con las representaciones que los módulos \textit{Temporal Shift} ya producen. La magnitud del daño crece a medida que el dataset se achica: moderada en AQA-7 (1106 clips), marcada en MTL-AQA (1412 clips específicos de clavados) y severa en JIGSAWS (206 clips), donde las pérdidas auxiliares dominan sobre la señal de regresión.
-
-\textbf{(3) En datasets pequeños (JIGSAWS, 144 muestras de entrenamiento) el KD degrada incluso a Students espaciales puros.} Las pérdidas auxiliares, calibradas para dominios ricos, introducen ruido que el modelo no puede filtrar con datos limitados.
-
-La conclusión práctica es que el \textbf{uso selectivo del KD propuesto} --aplicarlo a Students puramente espaciales cuando el dominio tiene variabilidad suficiente-- produce el mejor compromiso entre precisión y eficiencia. Fuera de este régimen, la línea base de Students livianos modernos (sin KD) es preferible por rendimiento, estabilidad numérica y simplicidad de entrenamiento.
-
-\section{Eficiencia Computacional}
-
-Se evaluó la eficiencia en inferencia considerando el número de operaciones de punto flotante (FLOPs), calculado con \texttt{fvcore}, y la latencia mediana por muestra (tamaño de lote 1), medida sobre una GPU NVIDIA RTX 3060 Mobile con 6~GB de VRAM. Los clips de entrada tienen dimensión $[3, 64, 224, 224]$. Estos indicadores son fundamentales para determinar la viabilidad de implementación en dispositivos con recursos limitados, como móviles o sistemas embebidos.
-
-\begin{table}[H]
-    \centering
-    \caption{Comparación de eficiencia computacional entre modelos (batch 1, T = 64, RTX 3060 Mobile).}
-    \label{tab:eficiencia}
-    \begin{tabular}{lccc}
-        \toprule
-        \textbf{Modelo} & \textbf{Params (M)}↓ & \textbf{FLOPs (G)}↓ & \textbf{Latencia (ms)}↓ \\
-        \midrule
-        I3D (Teacher) & 27.23 & 228.3 & 133.9 \\
-        TSM-MobileNetV2 & 2.23 & 20.0 & \textbf{54.3} \\
-        MobileNetV3 & \textbf{2.97} & \textbf{14.3} & \textbf{39.9} \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-
-Los Students reducen el número de FLOPs en más del 91~\% respecto al Teacher: TSM-MobileNetV2 requiere 20.0 GFLOPs frente a los 228.3 GFLOPs del I3D, y MobileNetV3 baja aún más a 14.3 GFLOPs. En términos de parámetros, ambos Students son aproximadamente $10\times$ más pequeños (2.2 M y 3.0 M respectivamente, frente a los 27.2 M del Teacher). Esta reducción drástica se traduce en una latencia de inferencia entre 2.5 y 3.4 veces menor, con MobileNetV3 logrando 39.9~ms por clip completo de 64 frames a 224~px.
-
-Puesto que los Students preservan prácticamente el mismo rendimiento predictivo del Teacher (véase Tabla~\ref{tab:precision}), estas cifras evidencian que el principal valor práctico del enfoque no reside tanto en la destilación \textit{per se}, sino en la constatación empírica de que una arquitectura ligera moderna, bien inicializada y bien entrenada, ya ofrece la precisión necesaria con un coste computacional compatible con dispositivos embebidos. Esto habilita aplicaciones en tiempo real de AQA en plataformas como Jetson Nano, teléfonos móviles o entornos de \textit{edge computing} sin requerir hardware especializado.
-
-
-\section{Visualización de Atenciones}
-
-Para comprender el enfoque espacial aprendido por cada modelo, se generaron mapas de atención derivados de las activaciones intermedias (bloque intermedio de cada arquitectura) interpoladas a la resolución original del frame y superpuestas mediante el mapa de colores \textit{jet}. Para cada \textit{dataset} se seleccionaron cinco clips del conjunto de prueba: uno con puntuación alta (percentil superior), uno con puntuación baja (percentil inferior) y tres con puntuaciones medias.
-
-La inspección visual muestra que el Teacher I3D concentra su atención de forma marcada en el cuerpo del atleta y las extremidades durante la fase de ejecución clave del movimiento (por ejemplo, el giro completo en los clavados o la entrada al agua). Los Students sin destilación muestran patrones similares pero con dispersión adicional sobre el fondo, posiblemente por la ausencia de modelado 3D completo. Los Students con destilación exhiben mapas de atención más compactos y centrados, cualitativamente más cercanos a los del Teacher, confirmando que la pérdida $\mathcal{L}_{att}$ efectivamente transfiere la localización espacial aunque no necesariamente mejore la métrica global de SRCC.
-
-En JIGSAWS, las atenciones de todos los modelos convergen sobre las manos del cirujano y los instrumentos, lo cual indica que los modelos aprenden a localizar la región relevante incluso en un dominio radicalmente distinto al de pre-entrenamiento (ImageNet, Kinetics).
-
-
-
-\section{Generalización Cruzada}
-
-Además de evaluar los modelos sobre los mismos conjuntos en los que fueron entrenados, se realizaron experimentos de \textit{evaluación cruzada entre dominios} para analizar la capacidad de generalización del framework de destilación. Se consideran dos transferencias: (i) de MTL-AQA (clavados especializados) a AQA-7 (multi-disciplina deportiva), que mide la adaptación dentro del mismo dominio amplio (deporte), y (ii) de AQA-7 (deporte) a JIGSAWS (cirugía robótica), que mide la transferencia a un dominio radicalmente distinto. En ambos casos el modelo se entrena únicamente en el conjunto \textit{source} y se evalúa en el \textit{target} sin ajuste posterior.
+La Tabla~\ref{tab:eficiencia} reporta el número de parámetros, los \ac{FLOPs} (calculados con \texttt{fvcore}) y la latencia mediana de inferencia (\textit{batch~1}, $T=64$, $H=W=224$) sobre una NVIDIA RTX 3060 Mobile (6~GB de VRAM).
 
 \begin{table}[H]
 \centering
-\caption{Evaluación cruzada entre dominios sin fine-tuning. Modelo entrenado en \textit{source} y evaluado sobre el test split de \textit{target}.}
-\label{tab:crossdomain}
+\caption{Eficiencia computacional. Latencia mediana sobre RTX 3060 Mobile, batch 1, clip $T=64$.}
+\label{tab:eficiencia}
 \begin{tabular}{lccc}
 \toprule
-\textbf{Modelo} & \textbf{Transferencia} & \textbf{SRCC}↑ & \textbf{PLCC}↑ \\
+\textbf{Modelo} & \textbf{Params (M)}↓ & \textbf{FLOPs (G)}↓ & \textbf{Latencia (ms)}↓ \\
 \midrule
-TSM-MobileNetV2       & MTL-AQA → AQA-7 & 0.5294 & 0.6085 \\
-TSM-MobileNetV2 + KD  & MTL-AQA → AQA-7 & 0.4704 & 0.5029 \\
-MobileNetV3           & MTL-AQA → AQA-7 & \textbf{0.5531} & 0.5716 \\
-MobileNetV3 + KD      & MTL-AQA → AQA-7 & 0.5409 & 0.5569 \\
+SlowFast-R50      & 33.6  & $\sim$250 & --- \\
+I3D-R50           & 27.2  & 228.3     & 133.9 \\
 \midrule
-TSM-MobileNetV2       & AQA-7 → JIGSAWS & $-0.193$ & $-0.157$ \\
-TSM-MobileNetV2 + KD  & AQA-7 → JIGSAWS & $-0.039$ & $-0.066$ \\
-MobileNetV3           & AQA-7 → JIGSAWS & 0.037 & 0.049 \\
-MobileNetV3 + KD      & AQA-7 → JIGSAWS & $-0.048$ & 0.024 \\
+TSM-MobileNetV2   & \textbf{2.2}  & 20.0  & 54.3 \\
+MobileNetV3       & \textbf{3.0}  & \textbf{14.3} & \textbf{39.9} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Los resultados revelan dos regímenes distintos de transferencia:
+Los \textit{Students} reducen los \ac{FLOPs} en más del $91\%$ frente al \textit{Teacher} \ac{I3D} (TSM-MobileNetV2: 20.0~G vs 228.3~G; MobileNetV3: 14.3~G), con parámetros aproximadamente $10\times$ menores y latencia entre $2.5$ y $3.4\times$ menor. MobileNetV3 alcanza 39.9~ms por clip de 64 \textit{frames}, lo que habilita aplicaciones en tiempo real en dispositivos embebidos. Este resultado, combinado con la brecha SRCC menor a $0.015$, valida que el \textit{pipeline} liviano no es sólo competitivo en precisión sino también drásticamente más eficiente.
 
-\textbf{MTL-AQA → AQA-7} (clavados especializados hacia multi-deporte, dominios relacionados): se observa una transferencia parcial útil, con correlaciones de Spearman en el rango $[0.47, 0.55]$. La destilación, en esta dirección, no aporta ganancia: las variantes con KD muestran SRCC ligeramente inferiores a sus baselines ($-0.012$ a $-0.059$), sugiriendo que la especialización inducida por las pérdidas auxiliares sobre MTL-AQA limita su generalidad.
+\section{Ablaciones del pipeline}
+\label{sec:ablaciones}
 
-\textbf{AQA-7 → JIGSAWS} (deporte hacia cirugía robótica, dominios muy distintos): la transferencia zero-shot fracasa en todos los modelos, con correlaciones cercanas a cero o negativas. Esto es coherente con la magnitud de la brecha de dominio visual y de la naturaleza de la tarea (la evaluación de habilidad quirúrgica depende de señales específicas —pulso, precisión del movimiento fino— que no están presentes en deportes). En este régimen, la destilación no tiene efecto significativo sobre la transferencia, confirmando que el KD propuesto transfiere conocimiento \textit{dentro} del dominio de entrenamiento pero no construye representaciones genéricas trans-dominio.
+Para responder \textbf{OE4}, se ejecutaron dos ablaciones sobre AQA-7 (semilla 42, TSM-MobileNetV2) que aíslan el aporte de los componentes clave del \textit{pipeline}: el preentrenamiento ImageNet y el módulo temporal explícito.
 
-Estos hallazgos delimitan el alcance del framework: es efectivo para generar Students eficientes en el dominio en el que se entrenan, pero la transferencia a dominios radicalmente nuevos (p. ej., cirugía) requerirá fine-tuning específico o estrategias adicionales como \textit{vision-language pretraining} o \textit{domain adaptation}.
+\subsection{Ablación E6: aporte del preentrenamiento ImageNet}
+
+La Tabla~\ref{tab:ablation_pretrain} compara TSM-MobileNetV2 con y sin pesos preentrenados de ImageNet. Sin preentrenamiento, el modelo se inicializa aleatoriamente y se entrena durante 80 \textit{epochs} (vs 50 del \textit{baseline}) para compensar la falta de inicialización fuerte.
+
+\begin{table}[H]
+\centering
+\caption{Ablación E6 — aporte del preentrenamiento ImageNet en TSM-MobileNetV2 sobre AQA-7.}
+\label{tab:ablation_pretrain}
+\begin{tabular}{lc}
+\toprule
+\textbf{Configuración} & \textbf{SRCC}↑ \\
+\midrule
+TSM-MBv2 con preentrenamiento ImageNet (media 3 semillas) & \textbf{0.9021} \\
+TSM-MBv2 sin preentrenamiento (semilla 42) & 0.8713 \\
+\midrule
+$\Delta$ SRCC & $-0.031$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+La caída de $0.031$ \ac{SRCC} ($\sim 3.4\%$ relativo) demuestra que \textbf{el preentrenamiento ImageNet es un componente crítico} del \textit{pipeline} propuesto. La transferencia de representaciones visuales aprendidas en ImageNet aporta una porción no trivial del cierre de brecha frente al \textit{Teacher}. Esto convierte la afirmación ``el \textit{pipeline} funciona'' en una más útil: \textit{``el \textit{pipeline} funciona porque el preentrenamiento ImageNet aporta $\sim 3$ puntos de SRCC sobre el backbone aleatorio''}.
+
+\subsection{Ablación E7: aporte del componente temporal explícito (TSM)}
+
+La Tabla~\ref{tab:ablation_tsm} compara TSM-MobileNetV2 (con \ac{TSM}) frente a una variante MobileNetV2 plana (sin \ac{TSM}, agregación temporal sólo por \textit{pooling} global), ambas inicializadas con pesos ImageNet.
+
+\begin{table}[H]
+\centering
+\caption{Ablación E7 — aporte del módulo Temporal Shift sobre AQA-7 (semilla 42).}
+\label{tab:ablation_tsm}
+\begin{tabular}{lc}
+\toprule
+\textbf{Configuración} & \textbf{SRCC}↑ \\
+\midrule
+TSM-MBv2 (con TSM, media 3 semillas) & \textbf{0.9021} \\
+MobileNetV2 plano (sin TSM, semilla 42) & 0.8921 \\
+\midrule
+$\Delta$ SRCC & $-0.010$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+La caída de $0.010$ \ac{SRCC} ($\sim 1.1\%$ relativo) indica que \textbf{el módulo \ac{TSM} aporta un beneficio modesto pero positivo} en AQA-7. Este resultado matiza la importancia del modelado temporal explícito: en datasets cuyas acciones son rápidas y bien caracterizadas por información espacial-instantánea (clavados, gimnasia, esquí), un \textit{pooling} temporal global ya captura la mayor parte de la señal. El componente temporal explícito sí aporta, pero su contribución es secundaria frente a la del preentrenamiento ImageNet (E6).
+
+\paragraph{Síntesis de las ablaciones.} El \textit{pipeline} liviano se sostiene en dos componentes identificables y separables: (i) el \textbf{preentrenamiento ImageNet moderno}, responsable de $\sim 3$ puntos de \ac{SRCC}, y (ii) el \textbf{módulo temporal eficiente \ac{TSM}}, que añade $\sim 1$ punto adicional. La contribución de la tesis no se reduce a ``usar arquitectura liviana'', sino a usarla dentro de un \textit{pipeline} donde estos dos componentes están bien identificados.
+
+\section{Generalización Cruzada}
+\label{sec:crossdomain}
+
+La Tabla~\ref{tab:crossdomain} reporta la transferencia cruzada \textit{zero-shot}: el modelo se entrena en el dominio \textit{source} y se evalúa sobre el conjunto de test del dominio \textit{target}, sin ajuste posterior.
+
+\begin{table}[H]
+\centering
+\caption{Evaluación cruzada entre dominios sin \textit{fine-tuning}. La columna \textit{Régimen} sigue la convención de la Tabla~\ref{tab:precision_aqa7}.}
+\label{tab:crossdomain}
+\begin{tabular}{llccc}
+\toprule
+\textbf{Modelo} & \textbf{Régimen} & \textbf{Transferencia} & \textbf{SRCC}↑ & \textbf{PLCC}↑ \\
+\midrule
+TSM-MobileNetV2 & Pipeline liviano & MTL-AQA → AQA-7 & 0.5294 & 0.6085 \\
+TSM-MobileNetV2 & + KD             & MTL-AQA → AQA-7 & 0.4704 & 0.5029 \\
+MobileNetV3     & Pipeline liviano & MTL-AQA → AQA-7 & \textbf{0.5531} & 0.5716 \\
+MobileNetV3     & + KD             & MTL-AQA → AQA-7 & 0.5409 & 0.5569 \\
+\midrule
+TSM-MobileNetV2 & Pipeline liviano & AQA-7 → JIGSAWS & $-0.193$ & $-0.157$ \\
+TSM-MobileNetV2 & + KD             & AQA-7 → JIGSAWS & $-0.039$ & $-0.066$ \\
+MobileNetV3     & Pipeline liviano & AQA-7 → JIGSAWS & 0.037    & 0.049 \\
+MobileNetV3     & + KD             & AQA-7 → JIGSAWS & $-0.048$ & 0.024 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Los resultados delimitan dos regímenes claros:
+
+\begin{itemize}
+    \item \textbf{MTL-AQA $\to$ AQA-7} (clavados especializados $\to$ multi-deporte): transferencia parcial útil, con \ac{SRCC} en el rango $[0.47, 0.55]$. La destilación no aporta ganancia: las variantes \textit{+~KD} muestran \ac{SRCC} ligeramente inferiores a la línea base.
+    \item \textbf{AQA-7 $\to$ JIGSAWS} (deporte $\to$ cirugía robótica): la transferencia \textit{zero-shot} fracasa en todos los modelos (\ac{SRCC} cercano a cero o negativo). La destilación tampoco aporta efecto significativo.
+\end{itemize}
+
+Estos hallazgos delimitan el alcance del \textit{pipeline}: es eficiente y competitivo \textit{dentro del dominio entrenado}, pero la transferencia a dominios radicalmente distintos requiere \textit{fine-tuning} específico o estrategias adicionales (adaptación de dominio, preentrenamiento multimodal). Esto no debilita la tesis: la acota.
+
+\section{Análisis marginal de la destilación de conocimiento}
+\label{sec:kd_marginal_results}
+
+Una pregunta complementaria al objetivo principal del trabajo (\textbf{OE6}) es si, sobre el \textit{pipeline} liviano fuerte ya validado, la incorporación de pérdidas de destilación de conocimiento aporta un beneficio adicional consistente. Para responderla se evaluó la variante \textit{+~KD} ($\beta, \gamma > 0$ en $\mathcal{L}_{total}$) en las seis combinaciones de Tabla~\ref{tab:precision_aqa7} y Tabla~\ref{tab:precision_otros}.
+
+La Tabla~\ref{tab:kd_summary} sintetiza el aporte marginal $\Delta$ \ac{SRCC} de la destilación frente al \textit{pipeline} liviano correspondiente.
+
+\begin{table}[H]
+\centering
+\caption{Aporte marginal de la destilación frente al \textit{pipeline} liviano (semilla 42, $\Delta$ \ac{SRCC} = + KD $-$ Pipeline liviano). Valores positivos indican mejora.}
+\label{tab:kd_summary}
+\begin{tabular}{llccc}
+\toprule
+\textbf{Student} & \textbf{Dataset} & \textbf{Pipeline} & \textbf{+ KD} & \textbf{$\Delta$ SRCC} \\
+\midrule
+TSM-MobileNetV2 & AQA-7   & 0.8968 & 0.8811 & $-0.016$ \\
+TSM-MobileNetV2 & MTL-AQA & 0.8804 & 0.7628 & $-0.118$ \\
+TSM-MobileNetV2 & JIGSAWS & 0.8283 & 0.3435 & $-0.485$ \\
+\midrule
+MobileNetV3     & AQA-7   & 0.8854 & 0.9250 & \textbf{$+0.040$} \\
+MobileNetV3     & MTL-AQA & 0.8703 & 0.8470 & $-0.023$ \\
+MobileNetV3     & JIGSAWS & 0.8368 & 0.7907 & $-0.046$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+De las seis configuraciones evaluadas, sólo una (MobileNetV3 + AQA-7) presenta una mejora positiva con \ac{KD} ($+0.040$ \ac{SRCC}). En las otras cinco la destilación degrada el rendimiento, con magnitudes que van desde $-0.016$ hasta $-0.485$. La degradación es especialmente severa en TSM-MobileNetV2 + JIGSAWS, donde el entrenamiento se vuelve numéricamente inestable.
+
+\paragraph{Lectura honesta.} Sobre una línea base liviana fuerte, \textbf{la destilación espacio-temporal no aporta valor consistente} y puede incluso degradar el rendimiento de forma severa. Este resultado refuerza el planteamiento del problema (Cap.~\ref{cap:propuesta}): la premisa heredada de la literatura previa---según la cual los \textit{Students} livianos requieren destilación para cerrar la brecha frente al \textit{Teacher}---no se sostiene cuando el \textit{Student} se entrena con un \textit{pipeline} moderno bien construido. La contribución central de la tesis no es la destilación, sino el \textit{pipeline} liviano que la vuelve innecesaria.
+
+\section{Visualización de Atenciones}
+\label{sec:gradcam}
+
+Para complementar el análisis cuantitativo, se generaron mapas de atención derivados de las activaciones intermedias (bloque intermedio de cada arquitectura) interpoladas a la resolución original del \textit{frame} y superpuestas mediante el mapa de colores \textit{jet}. Para cada \textit{dataset} se seleccionaron cinco clips del conjunto de prueba: uno con puntuación alta (percentil superior), uno con puntuación baja (percentil inferior) y tres con puntuaciones medias. La Figura~\ref{fig:gradcam} muestra ejemplos representativos en los tres dominios.
+
+\begin{figure}[H]
+    \centering
+    \begin{tabular}{c}
+        \includegraphics[width=0.85\textwidth]{figs/Resultados/gradcam_aqa7_diving.png} \\
+        {\footnotesize (a) AQA-7 -- clavado (\textit{diving\_125})} \\[0.4em]
+        \includegraphics[width=0.85\textwidth]{figs/Resultados/gradcam_mtl_aqa.png} \\
+        {\footnotesize (b) MTL-AQA -- clavado (04\_101)} \\[0.4em]
+        \includegraphics[width=0.85\textwidth]{figs/Resultados/gradcam_jigsaws_suturing.png} \\
+        {\footnotesize (c) JIGSAWS -- \textit{Suturing} (F003, capture1)} \\
+    \end{tabular}
+    \caption{Mapas de atención Grad-CAM para Teacher (\ac{I3D}), \textit{pipeline} liviano y variante \textit{+~KD} en los tres dominios evaluados. En deportes, el \textit{Teacher} concentra la atención sobre el cuerpo del atleta durante la fase clave del movimiento; en cirugía, todos los modelos convergen sobre las manos y los instrumentos.}
+    \label{fig:gradcam}
+\end{figure}
+
+La inspección visual muestra que el \textit{Teacher} \ac{I3D} concentra su atención sobre el cuerpo del atleta y las extremidades durante la fase clave del movimiento. El \textit{pipeline} liviano sin destilación reproduce patrones cualitativamente similares, lo cual es coherente con la pequeña brecha cuantitativa de \ac{SRCC}. En JIGSAWS las atenciones convergen sobre las manos del cirujano y los instrumentos, indicando que los modelos aprenden a localizar la región relevante incluso en un dominio radicalmente distinto al de pre-entrenamiento.

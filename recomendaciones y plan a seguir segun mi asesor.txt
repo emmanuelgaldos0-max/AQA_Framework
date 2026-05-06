@@ -1,0 +1,104 @@
+yo te diria que quede asi: Titulo: Pipeline liviano para Action Quality Assessment basado en arquitecturas modernas de bajo costo computacional
+
+
+Planteamiento del problema
+La estimación automática de la calidad de acciones en video requiere capturar información espacial y temporal asociada a la ejecución de una acción humana. Los modelos 3D profundos, como I3D, han sido ampliamente utilizados por su capacidad para modelar dependencias espacio-temporales complejas; sin embargo, su alto costo computacional limita su uso en escenarios donde se requiere baja latencia, menor consumo de memoria o despliegue en dispositivos con recursos limitados.
+
+La literatura reciente ha propuesto la destilación de conocimiento como una estrategia para transferir información desde modelos Teacher pesados hacia modelos Student livianos. Esta línea de trabajo parte de la premisa de que las arquitecturas livianas presentan una brecha sustancial de rendimiento frente al Teacher y que dicha brecha debe cerrarse mediante señales adicionales de supervisión. No obstante, esta premisa fue formulada en un contexto donde los pesos preentrenados disponibles, las prácticas de entrenamiento y las arquitecturas eficientes eran menos maduras.
+
+Actualmente, los modelos livianos pueden beneficiarse de pesos modernos preentrenados en ImageNet, optimizadores como AdamW, programación cosenoidal de la tasa de aprendizaje, entrenamiento con precisión mixta, acumulación de gradientes y módulos temporales eficientes como Temporal Shift Module. Bajo este nuevo escenario, no está claro si los Students livianos siguen requiriendo destilación para aproximarse al rendimiento de un Teacher 3D, ni cuáles son los límites reales de un pipeline liviano moderno para AQA.
+
+Este trabajo aborda dicho problema mediante el desarrollo de un pipeline eficiente basado en arquitecturas livianas modernas, evaluando su capacidad para aproximarse al rendimiento de I3D en distintos dominios, caracterizando su costo computacional y delimitando los escenarios donde el enfoque resulta suficiente o requiere mecanismos adicionales.
+
+
+con estos objetivos: 
+
+Objetivo general
+Desarrollar un pipeline eficiente de Action Quality Assessment basado en arquitecturas livianas modernas, evaluando empíricamente su capacidad para alcanzar rendimiento competitivo respecto a modelos 3D profundos en dominios de naturaleza distinta y delimitando sus límites de aplicabilidad.
+
+Objetivos específicos
+OE1. Revisar el estado del arte en AQA y métodos de compresión o destilación aplicados a video, identificando las principales suposiciones sobre la brecha entre modelos Teacher 3D y Students livianos.
+
+OE2. Construir un pipeline reproducible de entrenamiento e inferencia para Students livianos, específicamente TSM-MobileNetV2 y MobileNetV3, empleando pesos preentrenados, optimización moderna, precisión mixta y acumulación de gradientes.
+OE3. Cuantificar la brecha de rendimiento entre los Students livianos y el Teacher I3D mediante SRCC, PLCC y MAE en datasets representativos de AQA.
+OE4. Analizar el impacto de componentes clave del pipeline mediante ablaciones mínimas sobre el dataset principal, priorizando las decisiones con mayor efecto esperado en el rendimiento.
+OE5. Caracterizar la eficiencia computacional del pipeline propuesto en términos de parámetros, FLOPs y latencia de inferencia frente al Teacher I3D.
+OE6. Delimitar los límites de aplicabilidad del pipeline mediante análisis complementarios de transferencia cruzada y aporte marginal de la destilación sobre la línea base liviana.
+
+
+Sobre experimentos: 
+
+Debe demostrar que un pipeline liviano moderno puede acercarse a I3D con menor costo, y que la destilación queda como análisis marginal 
+
+
+Experimentos existentes que se reutilizan
+E1. Comparación principal entre Teacher I3D y Students livianos en tres dominios
+
+Se reutiliza la comparación entre I3D, TSM-MobileNetV2 y MobileNetV3 sobre AQA-7, MTL-AQA y JIGSAWS. Este experimento pasa a ser el eje de la tesis porque permite responder la pregunta central: si un pipeline moderno con arquitecturas livianas puede alcanzar rendimiento competitivo frente a un modelo 3D profundo.
+
+Este experimento valida principalmente el objetivo de construir y probar un pipeline liviano reproducible, y también el objetivo de cuantificar la brecha frente al Teacher mediante SRCC, PLCC y MAE. Si los Students mantienen una brecha pequeña respecto a I3D en datasets de naturaleza distinta, entonces la tesis puede sostener que el pipeline no es una solución aislada para un único dataset, sino una alternativa razonablemente estable en distintos dominios de AQA.
+
+El argumento que debe escribirse en la tesis es este: la comparación no se presenta como benchmark por sí mismo, sino como validación del pipeline propuesto. El Teacher I3D funciona como referencia de alta capacidad, mientras que los Students demuestran si la solución liviana conserva suficiente precisión para ser útil. Por tanto, E1 valida la contribución principal: un pipeline liviano moderno puede reducir la dependencia de arquitecturas 3D pesadas.
+
+Aqui es importante añadir un teacher mas en  la evaluacion de AQA-7, asi  incluiria SlowFast-R50, I3D y ambos Students. SlowFast responde la pregunta de cuál es la brecha real frente al paradigma 3D actual. I3D responde la pregunta de cuánto ha avanzado el campo desde el baseline histórico. Los Students demuestran dónde se ubica el pipeline liviano moderno respecto a ambos.
+
+
+E2. Evaluación de eficiencia computacional
+
+Se reutiliza la medición de parámetros, FLOPs y latencia de inferencia. Este experimento es indispensable porque sin él la tesis solo demostraría que los Students son competitivos en precisión, pero no que constituyen un pipeline eficiente.
+
+Este experimento valida el objetivo de caracterizar la eficiencia computacional del pipeline frente al Teacher I3D. También conecta directamente con el objetivo general, porque la tesis no propone simplemente otro modelo para AQA, sino una solución orientada a escenarios de bajo cómputo.
+
+El argumento de validación es que la cercanía en SRCC, PLCC y MAE solo tiene valor práctico si viene acompañada de una reducción clara en costo computacional. Si los Students logran rendimiento cercano al Teacher usando muchos menos FLOPs, menos parámetros y menor latencia, entonces el pipeline cumple su propósito: mejorar la relación entre precisión y costo. Este experimento convierte la tesis de una comparación de modelos en una propuesta eficiente.
+
+E3. Transferencia cruzada entre dominios
+
+Se reutiliza la transferencia cruzada entre MTL-AQA → AQA-7 y AQA-7 → JIGSAWS. Este experimento no debe venderse como prueba de generalización fuerte, porque los resultados no sostienen eso. Su función correcta es delimitar los límites de aplicabilidad del pipeline.
+
+Este experimento valida el objetivo de identificar en qué condiciones el pipeline deja de ser suficiente. Si la transferencia entre dominios deportivos relacionados produce resultados parciales, pero la transferencia de deporte a cirugía falla, entonces la tesis puede afirmar con honestidad que el pipeline es eficiente dentro del dominio entrenado, pero no resuelve por sí solo cambios fuertes de distribución.
+
+El argumento de validación es importante: E3 no debilita la tesis, la acota. Una tesis defendible no tiene que demostrar que el pipeline sirve para todo; tiene que mostrar dónde funciona y dónde no. Este experimento permite justificar líneas futuras como adaptación de dominio, fine-tuning específico o destilación multimodal, sin convertir esas extensiones en obligaciones de la tesis actual.
+
+E4. Resultados existentes de destilación de conocimiento
+
+Se reutilizan las configuraciones ya ejecutadas con destilación. Bajo la nueva narrativa, este experimento no intenta demostrar que KD mejora el modelo. La lectura correcta es que, sobre una línea base liviana fuerte, la destilación espacio-temporal no aporta valor consistente y puede incluso degradar el rendimiento.
+
+Este experimento valida el objetivo de analizar el aporte marginal de la destilación sobre el pipeline liviano. También refuerza el planteamiento del problema, porque cuestiona la premisa de que la destilación es necesaria para cerrar la brecha entre Teacher y Student.
+
+El argumento de validación debe formularse así: si los Students baseline ya se aproximan al Teacher y la KD no mejora de forma consistente, entonces la contribución central no debe ser la destilación, sino el pipeline liviano moderno. E4 permite convertir un resultado aparentemente negativo en evidencia metodológica: aplicar KD de forma automática puede ser innecesario o contraproducente cuando el Student ya fue entrenado con un pipeline fuerte. Esta reinterpretación está alineada con el plan experimental previo, que propone mover KD a un rol secundario.
+
+Experimentos nuevos obligatorios
+E5. Réplicas por semilla para los Students baseline en AQA-7
+
+Se deben ejecutar dos semillas adicionales en AQA-7 para TSM-MobileNetV2 baseline y MobileNetV3 baseline. Como ya existe la semilla 42, esto permite reportar tres semillas para los dos Students principales en el dataset más importante. No se repiten los tres datasets ni se repite obligatoriamente el Teacher, porque eso elevaría demasiado el costo y no es necesario para sostener la contribución mínima.
+
+Este experimento valida el objetivo de cuantificar la brecha de rendimiento frente al Teacher con mayor rigor experimental. También protege la afirmación central de la tesis: que los Students livianos modernos alcanzan rendimiento competitivo. Sin estas réplicas, cualquier revisor puede argumentar que el resultado depende de una única semilla, del orden de batches o de una inicialización favorable.
+
+El argumento de validación es directo: E5 no busca cerrar toda discusión estadística, sino evitar que la tesis dependa de una observación puntual. Si las dos semillas adicionales muestran que TSM-MobileNetV2 y MobileNetV3 mantienen resultados cercanos a los ya obtenidos, la tesis gana estabilidad. Si aparece más varianza, la tesis también mejora, porque permitiría reportar límites reales del pipeline y no una conclusión sobredimensionada.
+
+Este experimento es más importante que repetir la destilación. La contribución principal está en los Students baseline, no en KD.
+
+E6. Ablación sin preentrenamiento ImageNet
+
+Se ejecuta una variante del pipeline sobre AQA-7 removiendo el preentrenamiento ImageNet. Esta ablación debe hacerse sobre el Student más representativo del pipeline, preferiblemente TSM-MobileNetV2 si se quiere enfatizar AQA en video, o MobileNetV3 si se quiere mantener el costo más bajo. Mi recomendación es TSM-MobileNetV2, porque permite conectar mejor con el componente temporal del pipeline.
+
+Este experimento valida el objetivo de analizar el impacto de los componentes clave del pipeline. La tesis afirma que el resultado no se debe simplemente a usar una arquitectura liviana, sino a usarla dentro de un pipeline moderno. El preentrenamiento es probablemente el componente más importante de ese pipeline, por lo que debe aislarse.
+
+El argumento de validación es el siguiente: si al remover ImageNet el rendimiento cae de forma clara, entonces se demuestra que el cierre de brecha frente al Teacher depende en parte de la transferencia de representaciones visuales aprendidas previamente. Eso fortalece la tesis porque transforma la afirmación “el pipeline funciona” en una afirmación más útil: “el pipeline funciona por componentes identificables, y el preentrenamiento es uno de los más relevantes”.
+
+Si la caída no es grande, el resultado también es útil, pero obliga a matizar: el pipeline sería menos dependiente del preentrenamiento de lo esperado. Lo que no debe hacerse es omitir esta ablación, porque entonces el pipeline queda como caja negra.
+
+E7. Ablación sin componente temporal explícito
+
+Se ejecuta una segunda ablación sobre AQA-7 removiendo el componente temporal explícito, idealmente usando TSM-MobileNetV2 sin TSM o una variante equivalente que permita aislar el efecto del modelado temporal eficiente.
+
+Este experimento valida el objetivo de analizar qué componentes del pipeline son necesarios para AQA en video. Como la tarea requiere capturar información espacial y temporal, no basta con mostrar que una red liviana funciona. Hay que demostrar si el componente temporal contribuye realmente al desempeño.
+
+El argumento de validación es este: si remover TSM degrada el rendimiento, entonces la tesis puede sostener que el pipeline no solo se beneficia de modelos livianos y preentrenamiento, sino también de un mecanismo temporal eficiente. Esto es central para defender que la propuesta está diseñada para video y no es simplemente una adaptación superficial de modelos de imagen.
+
+Si la ablación sin TSM no degrada mucho, el resultado también sería importante, pero cambiaría la interpretación: indicaría que, para ciertos datasets de AQA, el preentrenamiento y el muestreo temporal podrían ser suficientes para capturar señales relevantes sin modelado temporal explícito fuerte. En cualquiera de los dos casos, E7 ayuda a delimitar el verdadero aporte técnico del pipeline.
+
+Cierre del plan mínimo
+
+Con estos experimentos, el plan mínimo queda cerrado con cuatro tipos de evidencia. E1 valida precisión frente al Teacher. E2 valida eficiencia computacional. E3 y E4 delimitan el alcance del pipeline y el rol secundario de KD. E5 protege la afirmación central frente a la crítica de una sola semilla. E6 y E7 explican qué componentes del pipeline sostienen el rendimiento.
+

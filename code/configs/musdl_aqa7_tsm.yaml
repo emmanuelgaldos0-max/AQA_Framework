@@ -1,0 +1,21 @@
+extends: base.yaml
+
+# MUSDL en AQA-7 con TSM-MobileNetV2.
+
+model:
+  name: tsm_mobilenetv2
+  pretrained_on: imagenet
+
+train:
+  batch_size: 2
+  grad_accum_steps: 8
+  lr: 3.0e-4
+  epochs: 50
+  early_stop_patience: 12
+
+musdl:
+  num_bins: 100
+  sigma: 5.0
+  score_min: 0.0
+  score_max: 1.0
+  dropout: 0.5

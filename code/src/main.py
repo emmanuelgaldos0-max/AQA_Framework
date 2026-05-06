@@ -96,7 +96,9 @@ def main():
         model_name = f"kd_{student_name}"
     else:
         model_name = cfg["model"]["name"]
-        model = build_model(model_name, clip_length=clip_length, pretrained=True)
+        # `pretrained` configurable vía YAML (default True). E6 = ablación sin ImageNet pretrain.
+        pretrained = bool(cfg["model"].get("pretrained", True))
+        model = build_model(model_name, clip_length=clip_length, pretrained=pretrained)
 
     run_name = args.run_name or f"{args.dataset}_{model_name}_seed{args.seed}"
     run_dir = Path(cfg["logging"]["checkpoint_dir"]) / run_name

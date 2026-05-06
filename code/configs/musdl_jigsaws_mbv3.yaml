@@ -1,0 +1,22 @@
+extends: base.yaml
+
+# MUSDL en JIGSAWS con MobileNetV3-Large.
+# Score = GRS [6, 30] normalizado a [0,1]. σ pequeño porque dataset chico (144 train).
+
+model:
+  name: mobilenetv3_large
+  pretrained_on: imagenet
+
+train:
+  batch_size: 2
+  grad_accum_steps: 8
+  lr: 3.0e-4
+  epochs: 50
+  early_stop_patience: 12
+
+musdl:
+  num_bins: 100
+  sigma: 5.0
+  score_min: 0.0
+  score_max: 1.0
+  dropout: 0.5

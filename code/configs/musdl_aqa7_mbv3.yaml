@@ -1,0 +1,23 @@
+extends: base.yaml
+
+# MUSDL en AQA-7 con MobileNetV3-Large.
+# Reemplaza la cabeza de regresión por una distribución sobre 100 bins
+# centrada en el score real (gaussiana discreta).
+
+model:
+  name: mobilenetv3_large
+  pretrained_on: imagenet
+
+train:
+  batch_size: 2
+  grad_accum_steps: 8     # batch efectivo = 16
+  lr: 3.0e-4
+  epochs: 50
+  early_stop_patience: 12
+
+musdl:
+  num_bins: 100
+  sigma: 5.0              # σ en unidades de bin (5 bins ≈ 5% del rango)
+  score_min: 0.0
+  score_max: 1.0
+  dropout: 0.5
