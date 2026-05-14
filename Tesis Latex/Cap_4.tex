@@ -73,20 +73,20 @@ La Tabla~\ref{tab:eficiencia} reporta el número de parámetros, los \ac{FLOPs} 
 
 \begin{table}[H]
 \centering
-\caption{Eficiencia computacional. Latencia mediana sobre RTX 3060 Mobile, \textit{batch}~1, clip $T=64$. Se incluye X3D-M como referencia 3D eficiente adicional.}
+\caption{Eficiencia computacional. Latencia mediana sobre RTX 3060 Mobile (mediana sobre 20 corridas), \textit{batch}~1, clip $T=64$. Se incluye X3D-M como Student 3D liviano adicional.}
 \label{tab:eficiencia}
 \small
 \begin{tabular}{lccc}
 \toprule
 \textbf{Modelo} & \textbf{Params (M)}↓ & \textbf{FLOPs (G)}↓ & \textbf{Latencia (ms)}↓ \\
 \midrule
-SlowFast-R50    & 33.6         & $\sim$250     & ---            \\
-I3D-R50         & 27.2         & 228.3         & 133.9          \\
+SlowFast-R50    & 33.65        & 101.2         & 88.9           \\
+I3D-R50         & 27.23        & 228.3         & 140.8          \\
 \midrule
-X3D-M           & 2.0          & 35.4          & 74.8           \\
-TSM-MobileNetV2 & \textbf{2.2} & 20.0          & 54.3           \\
-MobileNetV2 plano (E7) & 2.2  & 19.8          & 49.6           \\
-MobileNetV3     & 3.0          & \textbf{14.3} & \textbf{39.9}  \\
+X3D-M           & \textbf{2.01} & 19.3          & 62.6           \\
+TSM-MobileNetV2 & 2.23         & 20.0          & 56.5           \\
+MobileNetV2 plano (E7) & 2.23  & 20.0          & 54.0           \\
+MobileNetV3     & 2.97         & \textbf{14.3} & \textbf{42.0}  \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -153,20 +153,20 @@ Más allá de las comparaciones puntuales, una pregunta natural es: dado un pres
 
 \begin{table}[H]
 \centering
-\caption{Frontera Pareto en AQA-7. SRCC reportado con semilla 42 (\textit{Students}: media de 3 semillas donde se indica). FLOPs y latencia tomados de la Tabla~\ref{tab:eficiencia}.}
+\caption{Frontera Pareto en AQA-7. SRCC con semilla 42 (\textit{Students} 2D: media de 3 semillas; X3D-M: semilla 42). FLOPs y latencia tomados de la Tabla~\ref{tab:eficiencia}.}
 \label{tab:pareto}
 \small
 \begin{tabular}{lcccc}
 \toprule
 \textbf{Modelo} & \textbf{Params (M)} & \textbf{FLOPs (G)} & \textbf{Latencia (ms)} & \textbf{SRCC}↑ \\
 \midrule
-SlowFast-R50    & 33.6  & $\sim$250 & ---   & 0.9158 \\
-I3D-R50         & 27.2  & 228.3     & 133.9 & 0.9052 \\
+SlowFast-R50    & 33.65 & 101.2     & 88.9   & 0.9158 \\
+I3D-R50         & 27.23 & 228.3     & 140.8  & 0.9052 \\
 \midrule
-X3D-M           & 2.0   & 35.4      & 74.8  & 0.8945 \\
-TSM-MobileNetV2 & 2.2   & 20.0      & 54.3  & 0.9021 \\
-MobileNetV2 plano (E7) & 2.2 & 19.8 & 49.6 & 0.8921 \\
-MobileNetV3     & 3.0   & 14.3      & 39.9  & 0.8907 \\
+\textbf{X3D-M}  & \textbf{2.01} & \textbf{19.3} & 62.6  & \textbf{0.9211} \\
+TSM-MobileNetV2 & 2.23  & 20.0      & 56.5   & 0.9021 \\
+MobileNetV2 plano (E7) & 2.23 & 20.0 & 54.0  & 0.8921 \\
+MobileNetV3     & 2.97  & 14.3      & 42.0   & 0.8907 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -174,12 +174,12 @@ MobileNetV3     & 3.0   & 14.3      & 39.9  & 0.8907 \\
 De la Tabla~\ref{tab:pareto} se desprenden tres observaciones:
 
 \begin{itemize}
-    \item TSM-MobileNetV2 \emph{domina} la frontera Pareto en el rango de costo bajo: alcanza \ac{SRCC} 0.9021 con 20~GFLOPs, mejor que X3D-M (0.8945 con 35.4~GFLOPs) y mejor que MobileNetV3 (0.8907 con 14.3~GFLOPs) en términos absolutos.
-    \item MobileNetV3 domina la frontera de costo mínimo: el menor \ac{FLOPs} y latencia, con sólo $\sim 1$ punto de pérdida en \ac{SRCC}.
-    \item X3D-M, pese a usar convoluciones 3D explícitas, no supera al \textit{pipeline} 2D+TSM con la misma receta, lo que sugiere que para AQA en arquitecturas livianas el modelado temporal por \textit{shift} es competitivo frente a 3D denso con un tercio de los \ac{FLOPs}.
+    \item X3D-M \emph{domina la frontera Pareto absoluta}: alcanza \ac{SRCC} de $0.9211$ con apenas 19.3~GFLOPs, superando incluso a los \textit{Teachers} \ac{I3D} ($0.9052$, 228~G) y SlowFast-R50 ($0.9158$, 101~G), con menos del 20\% de los \ac{FLOPs} de SlowFast y menos del 9\% de los \ac{FLOPs} de \ac{I3D}.
+    \item TSM-MobileNetV2 y MobileNetV3 quedan en la frontera de \ac{FLOPs} mínimos (20~G y 14~G respectivamente), a $\sim 0.02$ y $\sim 0.03$ \ac{SRCC} de X3D-M; útiles cuando el presupuesto computacional es aún más estricto.
+    \item El hallazgo refuerza la hipótesis central del trabajo: la \emph{receta moderna de entrenamiento} (preentrenamiento, AdamW, cosine, AMP, gradient accumulation) eleva el techo de las arquitecturas livianas a un nivel donde superan a los modelos 3D pesados clásicos del campo, sin requerir destilación de conocimiento.
 \end{itemize}
 
-La conclusión práctica es que el \textit{pipeline} propuesto ocupa la frontera Pareto en el régimen de bajo costo, y cualquier extensión 3D liviana posterior (X3D, MoViNet) debería competir contra esta frontera en lugar de contra el Teacher pesado.
+La conclusión práctica es que el \textit{pipeline} propuesto, instanciado en X3D-M, no sólo cierra la brecha frente a los \textit{Teachers} 3D sino que la invierte: con $\sim 9\%$ de los \ac{FLOPs} del \ac{I3D} alcanza un \ac{SRCC} $1.6\%$ superior. Esta inversión apoya la tesis empírica del trabajo: con prácticas modernas, las arquitecturas livianas son competitivas con o mejores que el SOTA 3D clásico en \ac{AQA} eficiente.
 
 \section{Comparación con el estado del arte}
 \label{sec:sota}
@@ -188,7 +188,7 @@ La Tabla~\ref{tab:sota} sitúa el \textit{pipeline} propuesto frente a métodos 
 
 \begin{table}[H]
 \centering
-\caption{Comparación con el estado del arte en AQA-7 y MTL-AQA. Los métodos previos usan mayoritariamente \ac{I3D} como \textit{backbone} (28--250~GFLOPs); los métodos propuestos usan arquitecturas livianas (14--20~GFLOPs).}
+\caption{Comparación con el estado del arte en AQA-7 y MTL-AQA. Los métodos previos usan mayoritariamente \ac{I3D} como \textit{backbone} (228+~GFLOPs); los métodos propuestos usan arquitecturas livianas (14--20~GFLOPs).}
 \label{tab:sota}
 \small
 \begin{tabular}{lcccc}
@@ -202,8 +202,9 @@ TSA-Net                            & 2021 & 0.848 & 0.939 & --- \\
 TPT                                & 2022 & ---   & \textbf{0.961} & --- \\
 HGCN                               & 2023 & 0.846 & 0.939 & --- \\
 \midrule
-\textbf{MobileNetV3 (\textit{pipeline})}     & 2026 & 0.891          & 0.870 & \textbf{14.3} \\
-\textbf{TSM-MobileNetV2 (\textit{pipeline})} & 2026 & \textbf{0.902} & 0.880 & 20.0 \\
+MobileNetV3 (\textit{pipeline})     & 2026 & 0.891          & 0.870 & \textbf{14.3} \\
+TSM-MobileNetV2 (\textit{pipeline}) & 2026 & 0.902          & 0.880 & 20.0 \\
+\textbf{X3D-M (\textit{pipeline})}  & 2026 & \textbf{0.921} & ---   & 19.3 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -211,12 +212,12 @@ HGCN                               & 2023 & 0.846 & 0.939 & --- \\
 La lectura honesta de esta comparación es:
 
 \begin{itemize}
-    \item En \textbf{AQA-7}, el \textit{pipeline} propuesto (0.902) supera a varios métodos SOTA basados en \ac{I3D} (USDL, GAKD, CoRe, TSA-Net, HGCN) usando aproximadamente el $9\%$ de sus \ac{FLOPs}. Este resultado refuerza la tesis: una receta moderna eleva el techo del \textit{Student} liviano a un nivel donde los métodos basados en \textit{backbones} pesados con recetas anteriores pierden su ventaja.
-    \item En \textbf{MTL-AQA}, el \textit{pipeline} queda aproximadamente 7--8 puntos por debajo del SOTA (TPT, CoRe). En este dataset especializado de clavados, los métodos SOTA incorporan componentes específicos (estructura de \textit{Temporal Parser}, regresión contrastiva, atención por grupos) que aportan en ese régimen pero requieren \textit{backbones} 3D pesados y entrenamiento más costoso.
+    \item En \textbf{AQA-7}, las tres instancias del \textit{pipeline} propuesto superan a todos los métodos SOTA basados en \ac{I3D} reportados (USDL, GAKD, CoRe, TSA-Net, HGCN). En particular, X3D-M alcanza $0.921$ \ac{SRCC}, $6.5$ puntos por encima del mejor SOTA reportado en este dataset, usando $\sim 8.5\%$ de sus \ac{FLOPs}. Este resultado refuerza la tesis empírica: una receta moderna sobre arquitecturas livianas eleva el techo a un nivel donde los métodos con \textit{backbones} pesados clásicos pierden su ventaja.
+    \item En \textbf{MTL-AQA}, los \textit{Students} 2D quedan aproximadamente 7--8 puntos por debajo del SOTA (TPT, CoRe). En este dataset especializado de clavados, los métodos SOTA incorporan componentes específicos (\textit{Temporal Parser}, regresión contrastiva, atención por grupos) que aportan en ese régimen pero requieren \textit{backbones} 3D pesados. La evaluación de X3D-M sobre MTL-AQA se identifica como dirección inmediata de trabajo futuro.
     \item En \textbf{todos los casos}, la diferencia clave es de costo: ningún método SOTA reportado opera con menos de 200~GFLOPs ni latencia compatible con dispositivos embebidos.
 \end{itemize}
 
-El aporte del trabajo se ubica en una zona específica del espacio de soluciones: \emph{precisión competitiva con el SOTA en al menos un dominio (AQA-7), a costo computacional radicalmente menor, y con resultados estables entre semillas}.
+El aporte del trabajo se ubica en una zona específica del espacio de soluciones: \emph{precisión competitiva o superior al SOTA en AQA-7 a costo computacional radicalmente menor, con resultados estables entre semillas}.
 
 \section{Generalización Cruzada}
 \label{sec:crossdomain}

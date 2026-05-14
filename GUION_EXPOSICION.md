@@ -119,43 +119,47 @@
 
 #### Minuto 5 — Resultados: comparación principal con Teachers (60 s)
 
-> "En AQA-7, el dataset principal, ejecuté **3 semillas** para reportar
-> media y desviación estándar:"
+> "En AQA-7, el dataset principal, ejecuté **3 semillas** para los
+> Students 2D y añadí un Student 3D liviano (X3D-M):"
 >
 > | Modelo | SRCC AQA-7 |
 > |---|---|
-> | **SlowFast-R50** (Teacher 3D moderno) | **0.9158** |
-> | **I3D-R50** (Teacher 3D histórico) | **0.9052** |
-> | TSM-MobileNetV2 (pipeline) | **0.9021 ± 0.005** |
-> | MobileNetV3 (pipeline) | 0.8907 ± 0.005 |
+> | **X3D-M** (pipeline 3D liviano) | **0.9211** ⭐ |
+> | SlowFast-R50 (Teacher 3D moderno) | 0.9158 |
+> | I3D-R50 (Teacher 3D histórico) | 0.9052 |
+> | TSM-MobileNetV2 (pipeline 2D) | 0.9021 ± 0.005 |
+> | MobileNetV3 (pipeline 2D) | 0.8907 ± 0.005 |
 >
-> "El pipeline queda a **menos de 0.025 SRCC** del Teacher 3D moderno,
-> con std de sólo 0.005 — el resultado es robusto entre semillas. En los
-> otros dos datasets (MTL-AQA, JIGSAWS) la brecha es menor a 0.01 SRCC."
+> "**X3D-M supera a ambos Teachers 3D** usando la misma receta moderna.
+> Los Students 2D quedan a menos de 0.025 SRCC del Teacher moderno con
+> std de sólo 0.005 — el resultado es robusto entre semillas."
 
 **Datos clave (memorizar):**
-- 0.9021 vs 0.9158 → −0.014 (vs SlowFast).
-- 0.9021 vs 0.9052 → −0.003 (vs I3D).
-- Std 0.005 (robusto).
+- X3D-M: 0.9211 (supera a SlowFast 0.9158 y a I3D 0.9052).
+- TSM-MBv2: 0.9021 ± 0.005 (3 semillas).
+- MBv3: 0.8907 ± 0.005 (3 semillas).
 
 #### Minuto 6 — Eficiencia computacional (60 s)
 
-> "La parte clave de la propuesta: **lo que ahorramos en cómputo**."
+> "La parte clave de la propuesta: **el costo computacional radicalmente
+> menor**. Todos los valores medidos directamente sobre RTX 3060."
 >
 > | Modelo | Params | FLOPs | Latencia |
 > |---|---|---|---|
-> | I3D | 27 M | 228 G | 134 ms |
-> | TSM-MobileNetV2 | **2.2 M** | **20 G** | **54 ms** |
-> | MobileNetV3 | **3.0 M** | **14 G** | **40 ms** |
+> | I3D | 27 M | 228 G | 141 ms |
+> | SlowFast | 34 M | 101 G | 89 ms |
+> | **X3D-M** | **2.0 M** | **19 G** | 63 ms |
+> | TSM-MBv2 | 2.2 M | 20 G | 57 ms |
+> | MobileNetV3 | 3.0 M | **14 G** | **42 ms** |
 >
-> "Usamos **menos del 9 % de los FLOPs** del Teacher I3D, parámetros 10×
-> menores, latencia 3× más rápida. **40 ms por clip de 64 frames** en una
-> RTX 3060 Mobile — eso ya permite tiempo real en dispositivos
+> "X3D-M, con SRCC 0.9211 (mejor que SlowFast), usa **el 19 % de sus
+> FLOPs**. Comparado contra I3D, **el 8.5 %**. MobileNetV3 baja hasta
+> **42 ms** por clip de 64 frames — tiempo real en dispositivos
 > embebidos."
 
 **Datos clave:**
-- "9 % FLOPs, 3× latencia, 10× menos parámetros."
-- 40 ms = tiempo real.
+- "X3D-M = 19 GFLOPs y supera al Teacher 3D moderno."
+- "MBv3 = 42 ms, tiempo real."
 
 #### Minuto 7 — Ablaciones (60 s)
 
@@ -180,7 +184,7 @@
 
 #### Minuto 8 — SOTA + cross-domain con TTA (60 s)
 
-> "Comparando con el estado del arte actual (2024–2025):"
+> "Comparando con el estado del arte (2020–2023):"
 >
 > | Método | AQA-7 | MTL-AQA |
 > |---|---|---|
@@ -188,16 +192,19 @@
 > | MUSDL (2020) | 0.85 | 0.93 |
 > | TSA-Net (2021) | 0.85 | 0.94 |
 > | TPT (2022) | — | **0.96** |
-> | **Mío (TSM-MBv2)** | **0.90** | 0.88 |
+> | **Mío X3D-M** | **0.921** ⭐ | (pendiente) |
+> | Mío TSM-MBv2 | 0.902 | 0.88 |
 >
-> "**En AQA-7 superamos a varios SOTA basados en I3D**. En MTL-AQA quedamos
-> 7 puntos detrás — los SOTA usan componentes específicos para clavados.
-> Todo esto usando **una fracción de los FLOPs**, lo cual ningún SOTA
-> reporta."
+> "**En AQA-7 superamos a TODOS los SOTA basados en I3D**, con X3D-M
+> 6 puntos por encima del mejor reportado. En MTL-AQA los Students 2D
+> quedan 7 puntos detrás — extender X3D-M a MTL-AQA es trabajo futuro
+> inmediato. Todo esto usando **una fracción de los FLOPs**, lo cual
+> ningún SOTA reporta."
 >
 > "Adicionalmente, propusimos **Test-Time Adaptation** por BN-recalibration
-> para cross-domain — primera aplicación documentada en AQA. [Mostrar
-> tabla TTA con los 6 pares y las diferencias.]"
+> para cross-domain — primera aplicación documentada en AQA: 7 de 12
+> configuraciones mejoran con ganancias de hasta +0.54 SRCC en pares
+> de mayor domain shift."
 
 #### Minuto 9 — Discusión: por qué los resultados, posibilidades de mejora (60 s)
 
@@ -233,16 +240,16 @@
 
 | # | Dato | Valor |
 |---|---|---|
-| 1 | SRCC SlowFast (Teacher moderno) | 0.9158 |
-| 2 | SRCC I3D (Teacher histórico) | 0.9052 |
-| 3 | SRCC TSM-MBv2 (pipeline, 3 semillas) | 0.9021 ± 0.005 |
-| 4 | SRCC MobileNetV3 (pipeline, 3 semillas) | 0.8907 ± 0.005 |
-| 5 | Brecha vs SlowFast | < 0.025 |
-| 6 | FLOPs Teacher vs Students | 228 G vs 20 G y 14 G |
-| 7 | % FLOPs vs Teacher | 9 % |
-| 8 | Latencia MBv3 | 40 ms |
-| 9 | Ablación pretrain | −0.031 |
-| 10 | Ablación TSM | −0.010 |
+| 1 | **SRCC X3D-M (pipeline 3D liviano)** | **0.9211** ⭐ |
+| 2 | SRCC SlowFast (Teacher moderno) | 0.9158 |
+| 3 | SRCC I3D (Teacher histórico) | 0.9052 |
+| 4 | SRCC TSM-MBv2 (3 semillas) | 0.9021 ± 0.005 |
+| 5 | SRCC MobileNetV3 (3 semillas) | 0.8907 ± 0.005 |
+| 6 | FLOPs X3D-M / SlowFast / I3D | 19 G / 101 G / 228 G |
+| 7 | Latencia X3D-M / MBv3 | 63 ms / 42 ms |
+| 8 | Ablación pretrain | −0.031 |
+| 9 | Ablación TSM | −0.010 |
+| 10 | TTA: configs que mejoran | 7/12, hasta +0.54 SRCC |
 
 ## Consejos prácticos
 
