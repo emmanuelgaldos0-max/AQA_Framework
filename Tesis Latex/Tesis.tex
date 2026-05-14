@@ -18,6 +18,19 @@
 \usepackage{float}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{needspace}
+
+% Penalizaciones máximas contra viudas y huérfanas (auditoría F1.4 / F1.5).
+\widowpenalty=10000
+\clubpenalty=10000
+
+% Evita que un título de sección quede solo al pie de página.
+\let\oldsection\section
+\renewcommand{\section}{\needspace{6\baselineskip}\oldsection}
+\let\oldsubsection\subsection
+\renewcommand{\subsection}{\needspace{5\baselineskip}\oldsubsection}
+\let\oldsubsubsection\subsubsection
+\renewcommand{\subsubsection}{\needspace{4\baselineskip}\oldsubsubsection}
 
 
 \title{Pipeline liviano para Action Quality Assessment basado en arquitecturas modernas de bajo costo computacional}
