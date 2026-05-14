@@ -1,0 +1,14 @@
+extends: base.yaml
+
+# X3D-M en JIGSAWS. Misma receta moderna que en AQA-7.
+
+model:
+  name: x3d_m
+  pretrained_on: kinetics400
+
+train:
+  batch_size: 2
+  grad_accum_steps: 8
+  lr: 3.0e-4
+  epochs: 50
+  early_stop_patience: 12

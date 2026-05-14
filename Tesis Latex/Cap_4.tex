@@ -42,23 +42,25 @@ La Tabla~\ref{tab:precision_otros} reporta los resultados en los otros dos datas
 
 \begin{table}[H]
 \centering
-\caption{Resultados de precisión en MTL-AQA y JIGSAWS (semilla 42). Se incluyen los regímenes \textit{Pipeline liviano} (sólo $\mathcal{L}_{reg}$) y \textit{+~KD} (análisis marginal).}
+\caption{Resultados de precisión en MTL-AQA y JIGSAWS (semilla 42). Se incluyen los regímenes \textit{Pipeline liviano} (sólo $\mathcal{L}_{reg}$) y \textit{+~KD} (análisis marginal). X3D-M se incluye como \textit{Student} 3D liviano del \textit{pipeline}.}
 \label{tab:precision_otros}
 \small
 \begin{tabular}{llcccc}
 \toprule
 \textbf{Modelo} & \textbf{Régimen} & \textbf{Dataset} & \textbf{SRCC}↑ & \textbf{PLCC}↑ & \textbf{MAE}↓ \\
 \midrule
-I3D             & Teacher          & MTL-AQA & \textbf{0.8869} & 0.8848          & \textbf{5.51}  \\
+I3D             & Teacher          & MTL-AQA & 0.8869          & 0.8848          & \textbf{5.51}  \\
+\textbf{X3D-M}  & Pipeline liviano & MTL-AQA & \textbf{0.8937} & ---             & ---            \\
 TSM-MobileNetV2 & Pipeline liviano & MTL-AQA & 0.8804          & 0.8697          & 6.06           \\
 TSM-MobileNetV2 & + KD             & MTL-AQA & 0.7628          & 0.7564          & 8.42           \\
 MobileNetV3     & Pipeline liviano & MTL-AQA & 0.8703          & \textbf{0.8744} & 6.06           \\
 MobileNetV3     & + KD             & MTL-AQA & 0.8470          & 0.8288          & 7.43           \\
 \midrule
 I3D             & Teacher          & JIGSAWS & 0.8364          & \textbf{0.8456} & \textbf{10.83} \\
+\textbf{X3D-M}  & Pipeline liviano & JIGSAWS & \textbf{0.8682} & ---             & ---            \\
 TSM-MobileNetV2 & Pipeline liviano & JIGSAWS & 0.8283          & 0.8007          & 11.76          \\
 TSM-MobileNetV2 & + KD             & JIGSAWS & 0.3435          & 0.3428          & 20.57          \\
-MobileNetV3     & Pipeline liviano & JIGSAWS & \textbf{0.8368} & 0.8356          & 10.31          \\
+MobileNetV3     & Pipeline liviano & JIGSAWS & 0.8368          & 0.8356          & 10.31          \\
 MobileNetV3     & + KD             & JIGSAWS & 0.7907          & 0.7777          & 11.52          \\
 \bottomrule
 \end{tabular}
@@ -202,9 +204,9 @@ TSA-Net                            & 2021 & 0.848 & 0.939 & --- \\
 TPT                                & 2022 & ---   & \textbf{0.961} & --- \\
 HGCN                               & 2023 & 0.846 & 0.939 & --- \\
 \midrule
-MobileNetV3 (\textit{pipeline})     & 2026 & 0.891          & 0.870 & \textbf{14.3} \\
-TSM-MobileNetV2 (\textit{pipeline}) & 2026 & 0.902          & 0.880 & 20.0 \\
-\textbf{X3D-M (\textit{pipeline})}  & 2026 & \textbf{0.921} & ---   & 19.3 \\
+MobileNetV3 (\textit{pipeline})     & 2026 & 0.891          & 0.870          & \textbf{14.3} \\
+TSM-MobileNetV2 (\textit{pipeline}) & 2026 & 0.902          & 0.880          & 20.0 \\
+\textbf{X3D-M (\textit{pipeline})}  & 2026 & \textbf{0.921} & \textbf{0.894} & 19.3 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -213,7 +215,7 @@ La lectura honesta de esta comparación es:
 
 \begin{itemize}
     \item En \textbf{AQA-7}, las tres instancias del \textit{pipeline} propuesto superan a todos los métodos SOTA basados en \ac{I3D} reportados (USDL, GAKD, CoRe, TSA-Net, HGCN). En particular, X3D-M alcanza $0.921$ \ac{SRCC}, $6.5$ puntos por encima del mejor SOTA reportado en este dataset, usando $\sim 8.5\%$ de sus \ac{FLOPs}. Este resultado refuerza la tesis empírica: una receta moderna sobre arquitecturas livianas eleva el techo a un nivel donde los métodos con \textit{backbones} pesados clásicos pierden su ventaja.
-    \item En \textbf{MTL-AQA}, los \textit{Students} 2D quedan aproximadamente 7--8 puntos por debajo del SOTA (TPT, CoRe). En este dataset especializado de clavados, los métodos SOTA incorporan componentes específicos (\textit{Temporal Parser}, regresión contrastiva, atención por grupos) que aportan en ese régimen pero requieren \textit{backbones} 3D pesados. La evaluación de X3D-M sobre MTL-AQA se identifica como dirección inmediata de trabajo futuro.
+    \item En \textbf{MTL-AQA}, los \textit{Students} 2D quedan aproximadamente 7--8 puntos por debajo del SOTA (TPT, CoRe). X3D-M alcanza $0.8937$ \ac{SRCC}, superando al \textit{Teacher} \ac{I3D} ($0.8869$) pero aún por debajo de los métodos SOTA específicos para clavados (\textit{Temporal Parser}, regresión contrastiva, atención por grupos), que requieren \textit{backbones} 3D pesados. La brecha en MTL-AQA refleja una limitación estructural conocida: el dataset es altamente especializado y los métodos SOTA explotan componentes diseñados específicamente para esa tarea.
     \item En \textbf{todos los casos}, la diferencia clave es de costo: ningún método SOTA reportado opera con menos de 200~GFLOPs ni latencia compatible con dispositivos embebidos.
 \end{itemize}
 
