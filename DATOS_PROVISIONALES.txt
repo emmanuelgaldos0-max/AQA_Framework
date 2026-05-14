@@ -7,32 +7,25 @@ Lista los valores que están en el .tex y que deben reemplazarse por los
 resultados experimentales finales cuando terminen las corridas en curso.
 
 ═══════════════════════════════════════════════════════════════════════
-1) TABLA TTA CROSS-DOMAIN (Cap_4, Tabla 5.7 nueva)
+1) TABLA TTA CROSS-DOMAIN (Cap_4, Tabla 5.9) — REAL ✅
 ═══════════════════════════════════════════════════════════════════════
 
-Origen: scripts/eval_cross_domain_tta.py (12 evaluaciones)
-Output esperado: code/experiments/cross_domain_tta_results.json
+ACTUALIZADO 2026-05-14 13:48 con resultados reales del JSON.
 
-Valores actuales puestos en el .tex (12 filas):
+Origen: scripts/eval_cross_domain_tta.py (12 evaluaciones completas)
+JSON: code/experiments/cross_domain_tta_results.json
 
-  source     target    arch              noTTA    TTA      Δ
-  --------------------------------------------------------------
-  aqa7       mtl_aqa   TSM-MobileNetV2   0.7329   0.7241   -0.009  ← REAL (1er run)
-  aqa7       mtl_aqa   MobileNetV3       0.7150   0.7320   +0.017
-  aqa7       jigsaws   TSM-MobileNetV2  -0.193    -0.084   +0.109
-  aqa7       jigsaws   MobileNetV3       0.037    0.142    +0.105
-  mtl_aqa    aqa7      TSM-MobileNetV2   0.5294   0.5536   +0.024
-  mtl_aqa    aqa7      MobileNetV3       0.5531   0.5728   +0.020
-  mtl_aqa    jigsaws   TSM-MobileNetV2   0.142    0.198    +0.056
-  mtl_aqa    jigsaws   MobileNetV3       0.215    0.247    +0.032
-  jigsaws    aqa7      TSM-MobileNetV2  -0.058    0.061   +0.119
-  jigsaws    aqa7      MobileNetV3       0.027    0.103   +0.076
-  jigsaws    mtl_aqa   TSM-MobileNetV2   0.094    0.151   +0.057
-  jigsaws    mtl_aqa   MobileNetV3       0.118    0.165   +0.047
+Hallazgo: 7/12 mejoran con TTA (no 11/12 como esperábamos).
+TTA es heterogéneo: ganancias muy grandes en pares de mayor shift,
+pérdidas en pares de transferencia inicialmente útil.
 
-Acción al volver:
-  cd code && cat experiments/cross_domain_tta_results.json
-  → reemplazar filas en Cap_4.tex (sección 5.5, tabla tab:tta_crossdomain)
+  Mejora promedio: +0.062 SRCC
+  Mejora máxima:   +0.540 (MTL→JIGSAWS, MBv3)
+  Pérdida máxima:  -0.681 (MTL→AQA-7, MBv3)
+
+Tabla 5.9 del Cap_4 actualizada con valores reales. No requiere
+reemplazo adicional. Narrativa Abstract/Resumen/Conclusiones también
+actualizada.
 
 ═══════════════════════════════════════════════════════════════════════
 2) X3D-M EN AQA-7 (Tabla Pareto eficiencia)

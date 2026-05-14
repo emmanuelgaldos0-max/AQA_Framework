@@ -270,27 +270,29 @@ La Tabla~\ref{tab:tta_crossdomain} reporta los seis pares de transferencia $\tim
 \toprule
 \textbf{Source} & \textbf{Target} & \textbf{Arch} & \textbf{sin TTA} & \textbf{con TTA-BN} & \textbf{$\Delta$ SRCC} \\
 \midrule
-AQA-7     & MTL-AQA  & TSM-MBv2  & 0.7329  & 0.7241  & $-0.009$ \\
-AQA-7     & MTL-AQA  & MBv3      & 0.7150  & 0.7320  & $+0.017$ \\
-AQA-7     & JIGSAWS  & TSM-MBv2  & $-0.193$ & $-0.084$ & $+0.109$ \\
-AQA-7     & JIGSAWS  & MBv3      & 0.037   & 0.142   & $+0.105$ \\
+AQA-7    & MTL-AQA & TSM-MBv2 &  0.7329 &  0.7241 & $-0.009$ \\
+AQA-7    & MTL-AQA & MBv3     &  0.6213 &  0.4956 & $-0.126$ \\
+AQA-7    & JIGSAWS & TSM-MBv2 & $-0.193$ &  0.137  & $+0.330$ \\
+AQA-7    & JIGSAWS & MBv3     &  0.037  &  0.212  & $+0.175$ \\
 \midrule
-MTL-AQA   & AQA-7    & TSM-MBv2  & 0.5294  & 0.5536  & $+0.024$ \\
-MTL-AQA   & AQA-7    & MBv3      & 0.5531  & 0.5728  & $+0.020$ \\
-MTL-AQA   & JIGSAWS  & TSM-MBv2  & 0.142   & 0.198   & $+0.056$ \\
-MTL-AQA   & JIGSAWS  & MBv3      & 0.215   & 0.247   & $+0.032$ \\
+MTL-AQA  & AQA-7   & TSM-MBv2 &  0.5294 &  0.4935 & $-0.036$ \\
+MTL-AQA  & AQA-7   & MBv3     &  0.5531 & $-0.128$ & $-0.681$ \\
+MTL-AQA  & JIGSAWS & TSM-MBv2 & $-0.034$ &  0.071  & $+0.105$ \\
+MTL-AQA  & JIGSAWS & MBv3     & $-0.211$ &  0.329  & $+0.540$ \\
 \midrule
-JIGSAWS   & AQA-7    & TSM-MBv2  & $-0.058$ & 0.061  & $+0.119$ \\
-JIGSAWS   & AQA-7    & MBv3      & 0.027   & 0.103   & $+0.076$ \\
-JIGSAWS   & MTL-AQA  & TSM-MBv2  & 0.094   & 0.151   & $+0.057$ \\
-JIGSAWS   & MTL-AQA  & MBv3      & 0.118   & 0.165   & $+0.047$ \\
+JIGSAWS  & AQA-7   & TSM-MBv2 & $-0.103$ &  0.391  & $+0.494$ \\
+JIGSAWS  & AQA-7   & MBv3     & $-0.023$ &  0.072  & $+0.095$ \\
+JIGSAWS  & MTL-AQA & TSM-MBv2 &  0.2972 &  0.0846 & $-0.213$ \\
+JIGSAWS  & MTL-AQA & MBv3     & $-0.228$ & $-0.157$ & $+0.071$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-La recalibración de \textit{BatchNorm} mejora 11 de las 12 configuraciones evaluadas, con ganancias particularmente notables en los pares de mayor \textit{domain shift} (AQA-7 $\to$ JIGSAWS y JIGSAWS $\to$ AQA-7, donde la transferencia \textit{zero-shot} colapsaba a valores cercanos a cero o negativos). En el único caso donde TTA degrada (AQA-7 $\to$ MTL-AQA, TSM-MBv2), la pérdida es marginal ($-0.009$) y compatible con ruido de estimación.
+La recalibración de \textit{BatchNorm} mejora 7 de las 12 configuraciones evaluadas y degrada las 5 restantes. La mejora promedio es de $+0.062$ \ac{SRCC}, pero la dispersión es amplia: los pares con mayor \textit{domain shift} (donde la transferencia \textit{zero-shot} colapsaba a valores cercanos a cero o negativos) se benefician sustancialmente del TTA, con ganancias de hasta $+0.540$ (MTL-AQA $\to$ JIGSAWS, MobileNetV3) y $+0.494$ (JIGSAWS $\to$ AQA-7, TSM-MobileNetV2). En contraste, los pares con transferencia parcial inicialmente útil pueden degradar al aplicar TTA, en algunos casos de forma severa ($-0.681$ en MTL-AQA $\to$ AQA-7, MobileNetV3).
 
-Este resultado constituye, según nuestra revisión de literatura, la primera aplicación documentada de \textit{Test-Time Adaptation} a \ac{AQA}. La técnica no introduce costo adicional de entrenamiento ni requiere etiquetas del dominio \textit{target}; el único costo es una pasada hacia adelante sobre clips no etiquetados durante la fase de despliegue.
+Este patrón sugiere un criterio práctico de aplicación: \textit{TTA-BN aporta cuando la transferencia zero-shot inicial es muy débil o degenerada, pero puede degradar cuando la transferencia inicial ya conserva señal útil del dominio source}. Esta heterogeneidad refleja una limitación conocida de la recalibración de BatchNorm en regresión: la sustitución total de estadísticas internas elimina información correlacional aprendida del \textit{source}, lo cual es beneficioso cuando esa información no transfiere y perjudicial cuando sí lo hace.
+
+Pese a esta heterogeneidad, el resultado constituye, según nuestra revisión de literatura, la primera aplicación documentada de \textit{Test-Time Adaptation} a \ac{AQA}. La técnica no introduce costo adicional de entrenamiento ni requiere etiquetas del dominio \textit{target}; el único costo es una pasada hacia adelante sobre clips no etiquetados durante la fase de despliegue. Una versión más robusta que selectivamente recalibre BatchNorm sólo cuando el \textit{shift} estimado supere un umbral queda como dirección clara de trabajo futuro.
 
 \section{Análisis marginal de la destilación de conocimiento}
 \label{sec:kd_marginal_results}
