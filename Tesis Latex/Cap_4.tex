@@ -295,7 +295,33 @@ La recalibración de \textit{BatchNorm} mejora 7 de las 12 configuraciones evalu
 
 Este patrón sugiere un criterio práctico de aplicación: \textit{TTA-BN aporta cuando la transferencia zero-shot inicial es muy débil o degenerada, pero puede degradar cuando la transferencia inicial ya conserva señal útil del dominio source}. Esta heterogeneidad refleja una limitación conocida de la recalibración de BatchNorm en regresión: la sustitución total de estadísticas internas elimina información correlacional aprendida del \textit{source}, lo cual es beneficioso cuando esa información no transfiere y perjudicial cuando sí lo hace.
 
-Pese a esta heterogeneidad, el resultado constituye, según nuestra revisión de literatura, la primera aplicación documentada de \textit{Test-Time Adaptation} a \ac{AQA}. La técnica no introduce costo adicional de entrenamiento ni requiere etiquetas del dominio \textit{target}; el único costo es una pasada hacia adelante sobre clips no etiquetados durante la fase de despliegue. Una versión más robusta que selectivamente recalibre BatchNorm sólo cuando el \textit{shift} estimado supere un umbral queda como dirección clara de trabajo futuro.
+Pese a esta heterogeneidad, el resultado constituye, según nuestra revisión de literatura, la primera aplicación documentada de \textit{Test-Time Adaptation} a \ac{AQA}. La técnica no introduce costo adicional de entrenamiento ni requiere etiquetas del dominio \textit{target}; el único costo es una pasada hacia adelante sobre clips no etiquetados durante la fase de despliegue.
+
+\paragraph{Ablación: reseteo de estadísticas y número de pases.} Para explorar el comportamiento heterogéneo de TTA-BN, se evaluaron dos hiperparámetros clave en dos pares representativos (el de mayor ganancia y el de mayor pérdida en la Tabla~\ref{tab:tta_crossdomain}): el número de pases de adaptación (1 vs 2) y la decisión de resetear las estadísticas del \textit{source} antes de adaptar (\textit{reset True/False}). Los resultados se reportan en la Tabla~\ref{tab:tta_ablation}.
+
+\begin{table}[H]
+\centering
+\caption{Ablación de TTA-BN: efecto del número de pases y del reseteo de las estadísticas del \textit{source}. Reset=False mantiene las estadísticas del source y las mezcla con las del target.}
+\label{tab:tta_ablation}
+\small
+\begin{tabular}{lllccc}
+\toprule
+\textbf{Source} & \textbf{Target} & \textbf{Arch} & \textbf{Pases} & \textbf{Reset} & \textbf{SRCC}↑ \\
+\midrule
+MTL-AQA & JIGSAWS & MBv3 & 1 & True  & \textbf{0.3288} \\
+MTL-AQA & JIGSAWS & MBv3 & 2 & True  & 0.0454 \\
+MTL-AQA & JIGSAWS & MBv3 & 1 & False & $-0.2468$ \\
+MTL-AQA & JIGSAWS & MBv3 & 2 & False & $-0.1676$ \\
+\midrule
+MTL-AQA & AQA-7   & MBv3 & 1 & True  & $-0.1282$ \\
+MTL-AQA & AQA-7   & MBv3 & 2 & True  & 0.4407          \\
+MTL-AQA & AQA-7   & MBv3 & 1 & False & \textbf{0.4711} \\
+MTL-AQA & AQA-7   & MBv3 & 2 & False & 0.4708          \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+La ablación revela un patrón consistente: la configuración óptima de TTA-BN depende del grado de \textit{domain shift}. En MTL-AQA $\to$ JIGSAWS (deporte $\to$ cirugía, \textit{shift} severo) la mejor opción es \textit{reset=True} con un pase ($0.3288$); resetear las estadísticas del \textit{source} es necesario porque éstas no transfieren. En MTL-AQA $\to$ AQA-7 (deporte $\to$ deporte, \textit{shift} moderado) la mejor opción es \textit{reset=False} ($0.4711$), recuperando el comportamiento catastrófico ($-0.128$) que aparecía con \textit{reset=True}; mantener las estadísticas del \textit{source} y mezclarlas con las del \textit{target} preserva información útil compartida entre dominios cercanos. Este resultado motiva una versión \emph{selectiva} de TTA-BN que decida el modo de reseteo en función de una estimación del \textit{shift} (e.g., distancia entre estadísticas previas y nuevas); su formulación y evaluación quedan como dirección clara de trabajo futuro.
 
 \section{Análisis marginal de la destilación de conocimiento}
 \label{sec:kd_marginal_results}

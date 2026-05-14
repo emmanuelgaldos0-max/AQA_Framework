@@ -240,7 +240,7 @@
 
 | # | Dato | Valor |
 |---|---|---|
-| 1 | **SRCC X3D-M (pipeline 3D liviano)** | **0.9211** ⭐ |
+| 1 | **SRCC X3D-M en AQA-7 / MTL-AQA / JIGSAWS** | **0.9211 / 0.8937 / 0.8682** ⭐ |
 | 2 | SRCC SlowFast (Teacher moderno) | 0.9158 |
 | 3 | SRCC I3D (Teacher histórico) | 0.9052 |
 | 4 | SRCC TSM-MBv2 (3 semillas) | 0.9021 ± 0.005 |

@@ -6,15 +6,22 @@
 
 ---
 
-## 1. Hallazgo principal: X3D-M domina la frontera Pareto
+## 1. Hallazgo principal: X3D-M supera al I3D Teacher en LOS TRES datasets
 
-**Resultado experimental:** X3D-M entrenado con la misma receta del
-pipeline (ImageNet pretrain, AdamW, cosine annealing, AMP, gradient
-accumulation, T=64) sobre AQA-7 alcanza:
+**Resultado experimental completo:** X3D-M entrenado con la misma receta
+del pipeline (ImageNet pretrain, AdamW, cosine annealing, AMP, gradient
+accumulation, T=64) en los tres datasets:
 
-- **SRCC = 0.9211** (epoch 32, early stop epoch 43)
-- **FLOPs = 19.31 G** (medidos con fvcore)
-- **Latencia = 62.6 ms** (mediana de 20 corridas en RTX 3060)
+| Dataset | X3D-M SRCC | I3D Teacher | Estado |
+|---|---|---|---|
+| AQA-7 | **0.9211** | 0.9052 | supera Teacher y SlowFast (0.9158); supera SOTA reportado |
+| MTL-AQA | **0.8937** | 0.8869 | supera Teacher; gap vs SOTA TPT (0.961) |
+| JIGSAWS | **0.8682** | 0.8364 | supera Teacher con margen amplio |
+
+**Eficiencia (medida con fvcore + torch.cuda.Event):**
+- FLOPs = 19.31 G
+- Latencia = 62.6 ms (mediana 20 corridas RTX 3060)
+- Params = 2.01 M
 
 ### Comparación con el resto
 
