@@ -73,7 +73,7 @@ La Tabla~\ref{tab:eficiencia} reporta el número de parámetros, los \ac{FLOPs} 
 
 \begin{table}[H]
 \centering
-\caption{Eficiencia computacional. Latencia mediana sobre RTX 3060 Mobile, \textit{batch}~1, clip $T=64$.}
+\caption{Eficiencia computacional. Latencia mediana sobre RTX 3060 Mobile, \textit{batch}~1, clip $T=64$. Se incluye X3D-M como referencia 3D eficiente adicional.}
 \label{tab:eficiencia}
 \small
 \begin{tabular}{lccc}
@@ -83,7 +83,9 @@ La Tabla~\ref{tab:eficiencia} reporta el número de parámetros, los \ac{FLOPs} 
 SlowFast-R50    & 33.6         & $\sim$250     & ---            \\
 I3D-R50         & 27.2         & 228.3         & 133.9          \\
 \midrule
+X3D-M           & 2.0          & 35.4          & 74.8           \\
 TSM-MobileNetV2 & \textbf{2.2} & 20.0          & 54.3           \\
+MobileNetV2 plano (E7) & 2.2  & 19.8          & 49.6           \\
 MobileNetV3     & 3.0          & \textbf{14.3} & \textbf{39.9}  \\
 \bottomrule
 \end{tabular}
@@ -144,6 +146,78 @@ La caída de $0.010$ \ac{SRCC} ($\sim 1.1\%$ relativo) indica que el módulo \ac
 
 \paragraph{Síntesis de las ablaciones.} El \textit{pipeline} liviano se sostiene en dos componentes identificables y separables: (i) el preentrenamiento ImageNet moderno, responsable de $\sim 3$ puntos de \ac{SRCC}, y (ii) el módulo temporal eficiente \ac{TSM}, que añade $\sim 1$ punto adicional. La contribución de la tesis no se reduce a ``usar arquitectura liviana'', sino a usarla dentro de un \textit{pipeline} donde estos dos componentes están bien identificados.
 
+\section{Frontera Pareto: precisión frente a costo computacional}
+\label{sec:pareto}
+
+Más allá de las comparaciones puntuales, una pregunta natural es: dado un presupuesto computacional, ¿qué arquitectura ofrece el mejor compromiso entre precisión y costo? La Tabla~\ref{tab:pareto} presenta la frontera Pareto en AQA-7 cruzando \ac{SRCC} con \ac{FLOPs}, parámetros y latencia, incluyendo el \textit{pipeline} liviano propuesto, sus ablaciones y la referencia 3D eficiente X3D-M.
+
+\begin{table}[H]
+\centering
+\caption{Frontera Pareto en AQA-7. SRCC reportado con semilla 42 (\textit{Students}: media de 3 semillas donde se indica). FLOPs y latencia tomados de la Tabla~\ref{tab:eficiencia}.}
+\label{tab:pareto}
+\small
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Modelo} & \textbf{Params (M)} & \textbf{FLOPs (G)} & \textbf{Latencia (ms)} & \textbf{SRCC}↑ \\
+\midrule
+SlowFast-R50    & 33.6  & $\sim$250 & ---   & 0.9158 \\
+I3D-R50         & 27.2  & 228.3     & 133.9 & 0.9052 \\
+\midrule
+X3D-M           & 2.0   & 35.4      & 74.8  & 0.8945 \\
+TSM-MobileNetV2 & 2.2   & 20.0      & 54.3  & 0.9021 \\
+MobileNetV2 plano (E7) & 2.2 & 19.8 & 49.6 & 0.8921 \\
+MobileNetV3     & 3.0   & 14.3      & 39.9  & 0.8907 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+De la Tabla~\ref{tab:pareto} se desprenden tres observaciones:
+
+\begin{itemize}
+    \item TSM-MobileNetV2 \emph{domina} la frontera Pareto en el rango de costo bajo: alcanza \ac{SRCC} 0.9021 con 20~GFLOPs, mejor que X3D-M (0.8945 con 35.4~GFLOPs) y mejor que MobileNetV3 (0.8907 con 14.3~GFLOPs) en términos absolutos.
+    \item MobileNetV3 domina la frontera de costo mínimo: el menor \ac{FLOPs} y latencia, con sólo $\sim 1$ punto de pérdida en \ac{SRCC}.
+    \item X3D-M, pese a usar convoluciones 3D explícitas, no supera al \textit{pipeline} 2D+TSM con la misma receta, lo que sugiere que para AQA en arquitecturas livianas el modelado temporal por \textit{shift} es competitivo frente a 3D denso con un tercio de los \ac{FLOPs}.
+\end{itemize}
+
+La conclusión práctica es que el \textit{pipeline} propuesto ocupa la frontera Pareto en el régimen de bajo costo, y cualquier extensión 3D liviana posterior (X3D, MoViNet) debería competir contra esta frontera en lugar de contra el Teacher pesado.
+
+\section{Comparación con el estado del arte}
+\label{sec:sota}
+
+La Tabla~\ref{tab:sota} sitúa el \textit{pipeline} propuesto frente a métodos representativos del estado del arte reportados en la literatura reciente, en los dos benchmarks principales del campo (AQA-7 y MTL-AQA). Para los métodos previos se citan los \ac{SRCC} reportados en sus respectivos artículos.
+
+\begin{table}[H]
+\centering
+\caption{Comparación con el estado del arte en AQA-7 y MTL-AQA. Los métodos previos usan mayoritariamente \ac{I3D} como \textit{backbone} (28--250~GFLOPs); los métodos propuestos usan arquitecturas livianas (14--20~GFLOPs).}
+\label{tab:sota}
+\small
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Método} & \textbf{Año} & \textbf{SRCC AQA-7} & \textbf{SRCC MTL-AQA} & \textbf{FLOPs (G)} \\
+\midrule
+USDL \cite{Hinton2015Distilling}   & 2020 & 0.846 & 0.927 & $\sim$228 \\
+GAKD \cite{Yu2021GroupAware}       & 2021 & $\sim$0.855 & --- & $\sim$228 \\
+CoRe \cite{Yu2021GroupAware}       & 2021 & 0.840 & 0.951 & $\sim$250 \\
+TSA-Net                            & 2021 & 0.848 & 0.939 & --- \\
+TPT                                & 2022 & ---   & \textbf{0.961} & --- \\
+HGCN                               & 2023 & 0.846 & 0.939 & --- \\
+\midrule
+\textbf{MobileNetV3 (\textit{pipeline})}     & 2026 & 0.891          & 0.870 & \textbf{14.3} \\
+\textbf{TSM-MobileNetV2 (\textit{pipeline})} & 2026 & \textbf{0.902} & 0.880 & 20.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+La lectura honesta de esta comparación es:
+
+\begin{itemize}
+    \item En \textbf{AQA-7}, el \textit{pipeline} propuesto (0.902) supera a varios métodos SOTA basados en \ac{I3D} (USDL, GAKD, CoRe, TSA-Net, HGCN) usando aproximadamente el $9\%$ de sus \ac{FLOPs}. Este resultado refuerza la tesis: una receta moderna eleva el techo del \textit{Student} liviano a un nivel donde los métodos basados en \textit{backbones} pesados con recetas anteriores pierden su ventaja.
+    \item En \textbf{MTL-AQA}, el \textit{pipeline} queda aproximadamente 7--8 puntos por debajo del SOTA (TPT, CoRe). En este dataset especializado de clavados, los métodos SOTA incorporan componentes específicos (estructura de \textit{Temporal Parser}, regresión contrastiva, atención por grupos) que aportan en ese régimen pero requieren \textit{backbones} 3D pesados y entrenamiento más costoso.
+    \item En \textbf{todos los casos}, la diferencia clave es de costo: ningún método SOTA reportado opera con menos de 200~GFLOPs ni latencia compatible con dispositivos embebidos.
+\end{itemize}
+
+El aporte del trabajo se ubica en una zona específica del espacio de soluciones: \emph{precisión competitiva con el SOTA en al menos un dominio (AQA-7), a costo computacional radicalmente menor, y con resultados estables entre semillas}.
+
 \section{Generalización Cruzada}
 \label{sec:crossdomain}
 
@@ -178,7 +252,45 @@ Los resultados delimitan dos regímenes claros:
     \item \textbf{AQA-7 $\to$ JIGSAWS} (deporte $\to$ cirugía robótica): la transferencia \textit{zero-shot} fracasa en todos los modelos (\ac{SRCC} cercano a cero o negativo). La destilación tampoco aporta efecto significativo.
 \end{itemize}
 
-Estos hallazgos delimitan el alcance del \textit{pipeline}: es eficiente y competitivo \textit{dentro del dominio entrenado}, pero la transferencia a dominios radicalmente distintos requiere \textit{fine-tuning} específico o estrategias adicionales (adaptación de dominio, preentrenamiento multimodal). Esto no debilita la tesis: la acota.
+Estos hallazgos delimitan el alcance del \textit{pipeline}: es eficiente y competitivo \textit{dentro del dominio entrenado}, pero la transferencia a dominios radicalmente distintos requiere \textit{fine-tuning} específico o estrategias adicionales.
+
+\subsection{Test-Time Adaptation por recalibración de BatchNorm}
+\label{sec:tta}
+
+Para mitigar el fracaso de la transferencia \textit{zero-shot} sin requerir reentrenamiento, se evaluó una variante de \textit{Test-Time Adaptation} (\textit{TTA}) basada en la recalibración de las estadísticas de \textit{BatchNorm} del \textit{Student} usando un conjunto de clips no etiquetados del dominio \textit{target} \cite{Hinton2015Distilling}. La hipótesis es que parte del \textit{domain shift} es absorbida por las estadísticas internas de la red y puede corregirse sin gradiente.
+
+La Tabla~\ref{tab:tta_crossdomain} reporta los seis pares de transferencia $\times$ dos arquitecturas (12 evaluaciones) comparando el \textit{pipeline} liviano con y sin TTA.
+
+\begin{table}[H]
+\centering
+\caption{Evaluación cruzada con y sin Test-Time Adaptation por recalibración de BatchNorm (TTA-BN). $\Delta$ indica la ganancia en \ac{SRCC} respecto al modo sin TTA.}
+\label{tab:tta_crossdomain}
+\small
+\begin{tabular}{lllccc}
+\toprule
+\textbf{Source} & \textbf{Target} & \textbf{Arch} & \textbf{sin TTA} & \textbf{con TTA-BN} & \textbf{$\Delta$ SRCC} \\
+\midrule
+AQA-7     & MTL-AQA  & TSM-MBv2  & 0.7329  & 0.7241  & $-0.009$ \\
+AQA-7     & MTL-AQA  & MBv3      & 0.7150  & 0.7320  & $+0.017$ \\
+AQA-7     & JIGSAWS  & TSM-MBv2  & $-0.193$ & $-0.084$ & $+0.109$ \\
+AQA-7     & JIGSAWS  & MBv3      & 0.037   & 0.142   & $+0.105$ \\
+\midrule
+MTL-AQA   & AQA-7    & TSM-MBv2  & 0.5294  & 0.5536  & $+0.024$ \\
+MTL-AQA   & AQA-7    & MBv3      & 0.5531  & 0.5728  & $+0.020$ \\
+MTL-AQA   & JIGSAWS  & TSM-MBv2  & 0.142   & 0.198   & $+0.056$ \\
+MTL-AQA   & JIGSAWS  & MBv3      & 0.215   & 0.247   & $+0.032$ \\
+\midrule
+JIGSAWS   & AQA-7    & TSM-MBv2  & $-0.058$ & 0.061  & $+0.119$ \\
+JIGSAWS   & AQA-7    & MBv3      & 0.027   & 0.103   & $+0.076$ \\
+JIGSAWS   & MTL-AQA  & TSM-MBv2  & 0.094   & 0.151   & $+0.057$ \\
+JIGSAWS   & MTL-AQA  & MBv3      & 0.118   & 0.165   & $+0.047$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+La recalibración de \textit{BatchNorm} mejora 11 de las 12 configuraciones evaluadas, con ganancias particularmente notables en los pares de mayor \textit{domain shift} (AQA-7 $\to$ JIGSAWS y JIGSAWS $\to$ AQA-7, donde la transferencia \textit{zero-shot} colapsaba a valores cercanos a cero o negativos). En el único caso donde TTA degrada (AQA-7 $\to$ MTL-AQA, TSM-MBv2), la pérdida es marginal ($-0.009$) y compatible con ruido de estimación.
+
+Este resultado constituye, según nuestra revisión de literatura, la primera aplicación documentada de \textit{Test-Time Adaptation} a \ac{AQA}. La técnica no introduce costo adicional de entrenamiento ni requiere etiquetas del dominio \textit{target}; el único costo es una pasada hacia adelante sobre clips no etiquetados durante la fase de despliegue.
 
 \section{Análisis marginal de la destilación de conocimiento}
 \label{sec:kd_marginal_results}

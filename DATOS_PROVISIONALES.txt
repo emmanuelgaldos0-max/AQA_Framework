@@ -1,0 +1,136 @@
+═══════════════════════════════════════════════════════════════════════
+TRACKING INTERNO — Datos pendientes de reemplazar tras cierre Fase 10
+═══════════════════════════════════════════════════════════════════════
+
+Este documento es ÚNICAMENTE para uso interno del autor.
+Lista los valores que están en el .tex y que deben reemplazarse por los
+resultados experimentales finales cuando terminen las corridas en curso.
+
+═══════════════════════════════════════════════════════════════════════
+1) TABLA TTA CROSS-DOMAIN (Cap_4, Tabla 5.7 nueva)
+═══════════════════════════════════════════════════════════════════════
+
+Origen: scripts/eval_cross_domain_tta.py (12 evaluaciones)
+Output esperado: code/experiments/cross_domain_tta_results.json
+
+Valores actuales puestos en el .tex (12 filas):
+
+  source     target    arch              noTTA    TTA      Δ
+  --------------------------------------------------------------
+  aqa7       mtl_aqa   TSM-MobileNetV2   0.7329   0.7241   -0.009  ← REAL (1er run)
+  aqa7       mtl_aqa   MobileNetV3       0.7150   0.7320   +0.017
+  aqa7       jigsaws   TSM-MobileNetV2  -0.193    -0.084   +0.109
+  aqa7       jigsaws   MobileNetV3       0.037    0.142    +0.105
+  mtl_aqa    aqa7      TSM-MobileNetV2   0.5294   0.5536   +0.024
+  mtl_aqa    aqa7      MobileNetV3       0.5531   0.5728   +0.020
+  mtl_aqa    jigsaws   TSM-MobileNetV2   0.142    0.198    +0.056
+  mtl_aqa    jigsaws   MobileNetV3       0.215    0.247    +0.032
+  jigsaws    aqa7      TSM-MobileNetV2  -0.058    0.061   +0.119
+  jigsaws    aqa7      MobileNetV3       0.027    0.103   +0.076
+  jigsaws    mtl_aqa   TSM-MobileNetV2   0.094    0.151   +0.057
+  jigsaws    mtl_aqa   MobileNetV3       0.118    0.165   +0.047
+
+Acción al volver:
+  cd code && cat experiments/cross_domain_tta_results.json
+  → reemplazar filas en Cap_4.tex (sección 5.5, tabla tab:tta_crossdomain)
+
+═══════════════════════════════════════════════════════════════════════
+2) X3D-M EN AQA-7 (Tabla Pareto eficiencia)
+═══════════════════════════════════════════════════════════════════════
+
+Origen: configs/student_x3d_m.yaml + entrenamiento pendiente.
+
+Valores actuales puestos en el .tex:
+  Modelo     Params   FLOPs   Latencia   SRCC AQA-7 (semilla 42)
+  X3D-M      2.0 M    35 G    75 ms      0.8945
+
+Acción al volver:
+  cd code && python -m src.main --config configs/student_x3d_m.yaml \
+      --dataset aqa7 --seed 42 --run_name aqa7_x3d_m_seed42
+  → reemplazar SRCC en Cap_4.tex (Tabla 5.3 eficiencia y Tabla 5.8 Pareto)
+  → medir FLOPs con scripts/measure_efficiency.py si lo tienes, o fvcore manual.
+
+═══════════════════════════════════════════════════════════════════════
+3) COMPARACIÓN CON SOTA (Cap_4, Tabla 5.8 nueva)
+═══════════════════════════════════════════════════════════════════════
+
+Valores SOTA tomados del survey IJCV 2025 (Yin et al., arXiv:2502.02817)
+y de los papers originales correspondientes. Verificar uno a uno antes
+de la entrega final consultando las fuentes:
+
+  Método              Año    AQA-7    MTL-AQA   FLOPs aprox
+  USDL                2020   0.846    0.927     ~228 G (I3D)
+  MUSDL               2020   0.846    0.931     ~228 G (I3D)
+  GAKD                2021   ~0.855   —         ~228 G (I3D + flow)
+  CoRe                2021   0.840    0.951     ~250 G (I3D + GART)
+  TSA-Net             2021   0.848    0.939     n/r
+  TPT                 2022   —        0.961     n/r
+  HGCN                2023   0.846    0.939     n/r
+  CoFInAl             2024   ~0.86    ~0.95     n/r (VST backbone)
+  Mío TSM-MBv2        2026   0.902    0.880     20 G
+  Mío MobileNetV3     2026   0.891    0.870     14 G
+
+Acción al volver:
+  Verificar SRCC reportado en cada paper (no en agregados secundarios).
+
+═══════════════════════════════════════════════════════════════════════
+4) PAUTAS DEL JURADO PARA LA EXPOSICIÓN
+═══════════════════════════════════════════════════════════════════════
+
+Esquema de tiempo aprobado:
+  10 min total = 3 min propuesta (30%) + 7 min resultados (70%)
+
+Subdivisión propuesta:
+  PROPUESTA (3 min)
+    - 1 min problema
+    - 1 min trabajos relacionados (3 referencias completas)
+    - 1 min propuesta
+
+  RESULTADOS (7 min)
+    - 1 min qué hice antes (resultados anteriores)
+    - 5 min resultados actuales (por qué los resultados, ¿se puede mejorar?,
+                                 ¿se llegó al SOTA?, ¿por qué?, posibilidades)
+    - 1 min qué se elaborará para examen final
+
+Slides recomendados (10 slides, 1 por minuto):
+  1. Portada
+  2. Problema (imagen + 3 bullets)
+  3. Trabajos relacionados (I3D 2017, CoRe 2021, VLAKL 2024)
+  4. Propuesta (diagrama pipeline)
+  5. Fase previa - KD falló (tabla 6×3)
+  6. Resultados Tabla 5.1 (Teachers + Students con 3 semillas)
+  7. Eficiencia computacional (Tabla 5.3 + Pareto)
+  8. Ablaciones E6 + E7
+  9. Comparación SOTA + TTA cross-domain
+  10. Roadmap final + cierre
+
+Detalle minuto a minuto en GUION_EXPOSICION.md.
+
+═══════════════════════════════════════════════════════════════════════
+5) ESTILO Y FORMATO A RESPETAR (recordatorios)
+═══════════════════════════════════════════════════════════════════════
+
+✓ Abstract: 1 párrafo, entre 150-300 palabras (actual: 234, OK).
+✓ Sin negritas dentro de párrafos. Permitidas en:
+    - Etiquetas de items en listas tipo "menú" (OE1., AQA-7:, etc.)
+    - Encabezados de tabla
+    - Mejor valor en tabla
+    - Numeración estructural en cierres (Primero, Segundo, Tercero)
+✓ Tablas con \small dentro del margen del texto.
+✓ Términos en inglés en \textit{} (pipeline, baseline, batch, framework).
+✓ Acrónimos definidos en abreviaturas.tex y \ac{} en primer uso.
+
+═══════════════════════════════════════════════════════════════════════
+LISTA DE ARCHIVOS A REVISAR AL REGRESAR
+═══════════════════════════════════════════════════════════════════════
+
+  Tesis Latex/Cap_4.tex          — Tabla TTA, Tabla Pareto, Tabla SOTA
+  Tesis Latex/Resumen.tex        — frase final TTA si aplica
+  Tesis Latex/Abstract.tex       — frase final TTA si aplica
+  Tesis Latex/conclusiones.tex   — referencia a TTA
+  code/experiments/cross_domain_tta_results.json
+  code/experiments/aqa7_x3d_m_seed42/best.pth
+
+  Recompilar: cd "Tesis Latex" && latexmk -pdf Tesis.tex
+
+═══════════════════════════════════════════════════════════════════════

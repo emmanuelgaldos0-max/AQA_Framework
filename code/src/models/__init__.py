@@ -5,6 +5,7 @@ from .mobilenetv3_video import MobileNetV3Video, build_mobilenetv3
 from .slowfast import SlowFastRegressor, build_slowfast
 from .tsm import TemporalShift
 from .tsm_mobilenetv2 import TSMMobileNetV2, build_tsm_mobilenetv2
+from .x3d import X3DRegressor, build_x3d
 
 
 def build_model(name: str, clip_length: int, pretrained: bool = True, **kwargs):
@@ -14,6 +15,8 @@ def build_model(name: str, clip_length: int, pretrained: bool = True, **kwargs):
         return build_i3d(pretrained=pretrained, **kwargs)
     if name == "slowfast" or name == "slowfast_r50":
         return build_slowfast(pretrained=pretrained, **kwargs)
+    if name in {"x3d", "x3d_m"}:
+        return build_x3d(pretrained=pretrained, variant="x3d_m", **kwargs)
     if name == "tsm_mobilenetv2":
         return build_tsm_mobilenetv2(clip_length=clip_length, pretrained=pretrained, **kwargs)
     if name == "mobilenetv2_video":  # E7: TSM-MBv2 sin TSM

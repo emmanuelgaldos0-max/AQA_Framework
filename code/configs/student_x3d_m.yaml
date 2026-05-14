@@ -1,0 +1,15 @@
+extends: base.yaml
+
+# X3D-M de pytorchvideo como referencia adicional para el benchmark Pareto.
+# ~2M params, convoluciones 3D explícitas (a diferencia de TSM 2D+shift).
+
+model:
+  name: x3d_m
+  pretrained_on: kinetics400
+
+train:
+  batch_size: 2
+  grad_accum_steps: 8
+  lr: 3.0e-4
+  epochs: 50
+  early_stop_patience: 12
