@@ -62,7 +62,7 @@ MobileNetV3       & + KD              & JIGSAWS & 0.7907          & 0.7777 & 11.
 \end{tabular}
 \end{table}
 
-En MTL-AQA y JIGSAWS la brecha SRCC entre el \textit{pipeline} liviano y el \textit{Teacher} es nuevamente menor a 0.01 ($-0.007$ y $-0.008$ respectivamente), consistente con lo observado en AQA-7. Esto sostiene la afirmación central del trabajo: \textbf{el \textit{pipeline} liviano moderno no es una solución aislada para un único dataset, sino una alternativa estable en dominios de naturaleza distinta} (deporte multi-disciplina, clavados especializados, cirugía robótica).
+En MTL-AQA y JIGSAWS la brecha SRCC entre el \textit{pipeline} liviano y el \textit{Teacher} es nuevamente menor a 0.01 ($-0.007$ y $-0.008$ respectivamente), consistente con lo observado en AQA-7. Esto sostiene la afirmación central del trabajo: el \textit{pipeline} liviano moderno no es una solución aislada para un único dataset, sino una alternativa estable en dominios de naturaleza distinta (deporte multi-disciplina, clavados especializados, cirugía robótica).
 
 \section{Eficiencia computacional}
 \label{sec:eficiencia}
@@ -113,7 +113,7 @@ $\Delta$ SRCC & $-0.031$ \\
 \end{tabular}
 \end{table}
 
-La caída de $0.031$ \ac{SRCC} ($\sim 3.4\%$ relativo) demuestra que \textbf{el preentrenamiento ImageNet es un componente crítico} del \textit{pipeline} propuesto. La transferencia de representaciones visuales aprendidas en ImageNet aporta una porción no trivial del cierre de brecha frente al \textit{Teacher}. Esto convierte la afirmación ``el \textit{pipeline} funciona'' en una más útil: \textit{``el \textit{pipeline} funciona porque el preentrenamiento ImageNet aporta $\sim 3$ puntos de SRCC sobre el backbone aleatorio''}.
+La caída de $0.031$ \ac{SRCC} ($\sim 3.4\%$ relativo) demuestra que el preentrenamiento ImageNet es un componente crítico del \textit{pipeline} propuesto. La transferencia de representaciones visuales aprendidas en ImageNet aporta una porción no trivial del cierre de brecha frente al \textit{Teacher}. Esto convierte la afirmación ``el \textit{pipeline} funciona'' en una más útil: el \textit{pipeline} funciona porque el preentrenamiento ImageNet aporta $\sim 3$ puntos de SRCC sobre el \textit{backbone} aleatorio.
 
 \subsection{Ablación E7: aporte del componente temporal explícito (TSM)}
 
@@ -135,9 +135,9 @@ $\Delta$ SRCC & $-0.010$ \\
 \end{tabular}
 \end{table}
 
-La caída de $0.010$ \ac{SRCC} ($\sim 1.1\%$ relativo) indica que \textbf{el módulo \ac{TSM} aporta un beneficio modesto pero positivo} en AQA-7. Este resultado matiza la importancia del modelado temporal explícito: en datasets cuyas acciones son rápidas y bien caracterizadas por información espacial-instantánea (clavados, gimnasia, esquí), un \textit{pooling} temporal global ya captura la mayor parte de la señal. El componente temporal explícito sí aporta, pero su contribución es secundaria frente a la del preentrenamiento ImageNet (E6).
+La caída de $0.010$ \ac{SRCC} ($\sim 1.1\%$ relativo) indica que el módulo \ac{TSM} aporta un beneficio modesto pero positivo en AQA-7. Este resultado matiza la importancia del modelado temporal explícito: en datasets cuyas acciones son rápidas y bien caracterizadas por información espacial-instantánea (clavados, gimnasia, esquí), un \textit{pooling} temporal global ya captura la mayor parte de la señal. El componente temporal explícito sí aporta, pero su contribución es secundaria frente a la del preentrenamiento ImageNet (E6).
 
-\paragraph{Síntesis de las ablaciones.} El \textit{pipeline} liviano se sostiene en dos componentes identificables y separables: (i) el \textbf{preentrenamiento ImageNet moderno}, responsable de $\sim 3$ puntos de \ac{SRCC}, y (ii) el \textbf{módulo temporal eficiente \ac{TSM}}, que añade $\sim 1$ punto adicional. La contribución de la tesis no se reduce a ``usar arquitectura liviana'', sino a usarla dentro de un \textit{pipeline} donde estos dos componentes están bien identificados.
+\paragraph{Síntesis de las ablaciones.} El \textit{pipeline} liviano se sostiene en dos componentes identificables y separables: (i) el preentrenamiento ImageNet moderno, responsable de $\sim 3$ puntos de \ac{SRCC}, y (ii) el módulo temporal eficiente \ac{TSM}, que añade $\sim 1$ punto adicional. La contribución de la tesis no se reduce a ``usar arquitectura liviana'', sino a usarla dentro de un \textit{pipeline} donde estos dos componentes están bien identificados.
 
 \section{Generalización Cruzada}
 \label{sec:crossdomain}
@@ -202,7 +202,7 @@ MobileNetV3     & JIGSAWS & 0.8368 & 0.7907 & $-0.046$ \\
 
 De las seis configuraciones evaluadas, sólo una (MobileNetV3 + AQA-7) presenta una mejora positiva con \ac{KD} ($+0.040$ \ac{SRCC}). En las otras cinco la destilación degrada el rendimiento, con magnitudes que van desde $-0.016$ hasta $-0.485$. La degradación es especialmente severa en TSM-MobileNetV2 + JIGSAWS, donde el entrenamiento se vuelve numéricamente inestable.
 
-\paragraph{Lectura honesta.} Sobre una línea base liviana fuerte, \textbf{la destilación espacio-temporal no aporta valor consistente} y puede incluso degradar el rendimiento de forma severa. Este resultado refuerza el planteamiento del problema (Cap.~\ref{cap:propuesta}): la premisa heredada de la literatura previa---según la cual los \textit{Students} livianos requieren destilación para cerrar la brecha frente al \textit{Teacher}---no se sostiene cuando el \textit{Student} se entrena con un \textit{pipeline} moderno bien construido. La contribución central de la tesis no es la destilación, sino el \textit{pipeline} liviano que la vuelve innecesaria.
+\paragraph{Lectura honesta.} Sobre una línea base liviana fuerte, la destilación espacio-temporal no aporta valor consistente y puede incluso degradar el rendimiento de forma severa. Este resultado refuerza el planteamiento del problema (Cap.~\ref{cap:propuesta}): la premisa heredada de la literatura previa---según la cual los \textit{Students} livianos requieren destilación para cerrar la brecha frente al \textit{Teacher}---no se sostiene cuando el \textit{Student} se entrena con un \textit{pipeline} moderno bien construido. La contribución central de la tesis no es la destilación, sino el \textit{pipeline} liviano que la vuelve innecesaria.
 
 \section{Visualización de Atenciones}
 \label{sec:gradcam}

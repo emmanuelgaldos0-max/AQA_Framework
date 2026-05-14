@@ -1,6 +1,6 @@
 \chapter{Propuesta}
 \label{cap:propuesta}
-Este capítulo detalla la metodología propuesta: un \textbf{\textit{pipeline} liviano para Action Quality Assessment} basado en arquitecturas modernas de bajo costo computacional. La propuesta se centra en dos componentes esenciales: (i) la elección de \textit{Students} livianos modernos (\ac{TSM}-MobileNetV2 y MobileNetV3) inicializados con pesos preentrenados en ImageNet, y (ii) una receta de entrenamiento moderna (AdamW, programación cosenoidal, precisión mixta, acumulación de gradientes) coherente con el preprocesamiento del \textit{Teacher} \ac{I3D}. Sobre esta línea base se evalúa, como análisis marginal en el Capítulo~\ref{chap:resultados}, un esquema de destilación de conocimiento (\ac{KD}) con el objetivo de cuantificar su aporte real cuando la línea base ya es fuerte.
+Este capítulo detalla la metodología propuesta: un \textit{pipeline} liviano para \textit{Action Quality Assessment} basado en arquitecturas modernas de bajo costo computacional. La propuesta se centra en dos componentes esenciales: (i) la elección de \textit{Students} livianos modernos (\ac{TSM}-MobileNetV2 y MobileNetV3) inicializados con pesos preentrenados en ImageNet, y (ii) una receta de entrenamiento moderna (AdamW, programación cosenoidal, precisión mixta, acumulación de gradientes) coherente con el preprocesamiento del \textit{Teacher} \ac{I3D}. Sobre esta línea base se evalúa, como análisis marginal en el Capítulo~\ref{chap:resultados}, un esquema de destilación de conocimiento (\ac{KD}) con el objetivo de cuantificar su aporte real cuando la línea base ya es fuerte.
 
 % ---
 \section{Planteamiento de la solución}
@@ -56,7 +56,7 @@ El \textit{pipeline} liviano se construye sobre dos arquitecturas \textit{Studen
 
 \subsection{Modelos Teacher (referencia)}
 
-Los \textit{Teachers} son modelos 3D profundos preentrenados en \textit{Kinetics-400}. En esta tesis cumplen únicamente el rol de \textbf{referencia de alta capacidad} para cuantificar la brecha del \textit{pipeline} liviano (\textbf{OE3}); no son la propuesta. Se utilizan dos:
+Los \textit{Teachers} son modelos 3D profundos preentrenados en \textit{Kinetics-400}. En esta tesis cumplen únicamente el rol de referencia de alta capacidad para cuantificar la brecha del \textit{pipeline} liviano (\textbf{OE3}); no son la propuesta. Se utilizan dos:
 
 \begin{itemize}
     \item \textbf{I3D-R50} (\textit{Inflated 3D ConvNet}, \cite{Carreira2017I3D}): basado en la expansión de filtros 2D preentrenados a 3D. Es la referencia histórica del campo \ac{AQA} y permite comparabilidad con la literatura previa.
@@ -79,7 +79,7 @@ Los \textit{Students} son la contribución central de la tesis. Se seleccionan d
     \item \textbf{MobileNetV3-Large} \cite{Howard2019MobileNetV3}:
         \begin{itemize}
             \item Arquitectura optimizada para eficiencia, con activaciones \textit{h-swish} y bloques \textit{Squeeze-and-Excitation}.
-            \item Aplicada a video mediante procesamiento por \textit{frame} con agregación temporal por \textit{pooling} global. \textbf{Sin} mecanismos explícitos de modelado temporal.
+            \item Aplicada a video mediante procesamiento por \textit{frame} con agregación temporal por \textit{pooling} global, sin mecanismos explícitos de modelado temporal.
             \item Su inclusión permite contrastar el aporte del componente temporal explícito.
         \end{itemize}
 \end{itemize}
@@ -122,8 +122,8 @@ Los tres conjuntos son distribuidos como \textit{frames} pre-extraídos en direc
 
     \item \textbf{JIGSAWS}:
         \begin{itemize}
-            \item \textbf{Cantidad de muestras}: 103 \textit{trials} oficiales de tres tareas quirúrgicas básicas (\textit{Suturing}, \textit{Knot Tying}, \textit{Needle Passing}) realizadas en el sistema robótico \textit{da Vinci}, distribuidos en dos vistas (\texttt{capture1} y \texttt{capture2}) para un total de \textbf{206 clips}.
-            \item \textbf{Duración promedio por trial}: 1 a 2 minutos. Para alimentar al modelo se muestrean \textbf{64 frames uniformemente distribuidos a lo largo del trial}; no se realiza segmentación por gesto.
+            \item \textbf{Cantidad de muestras}: 103 \textit{trials} oficiales de tres tareas quirúrgicas básicas (\textit{Suturing}, \textit{Knot Tying}, \textit{Needle Passing}) realizadas en el sistema robótico \textit{da Vinci}, distribuidos en dos vistas (\texttt{capture1} y \texttt{capture2}) para un total de 206 clips.
+            \item \textbf{Duración promedio por trial}: 1 a 2 minutos. Para alimentar al modelo se muestrean 64 frames uniformemente distribuidos a lo largo del trial; no se realiza segmentación por gesto.
             \item \textbf{Resolución promedio}: 640$\times$480.
             \item \textbf{Peso total del dataset}: Aproximadamente 1.5 GB en formato frames.
             \item \textbf{Anotaciones}: puntuaciones OSATS (\textit{Objective Structured Assessment of Technical Skills}) compuestas por seis ítems en el rango $[1,5]$ que suman GRS $\in [6,30]$, además de etiquetas de \textit{expertise} (\textit{novice}, \textit{intermediate}, \textit{expert}). Se utiliza GRS como etiqueta de regresión.
