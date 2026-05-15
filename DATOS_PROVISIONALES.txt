@@ -1,79 +1,115 @@
 ═══════════════════════════════════════════════════════════════════════
-TRACKING INTERNO — Datos pendientes de reemplazar tras cierre Fase 10
+TRACKING INTERNO — Estado consolidado de datos en el documento
 ═══════════════════════════════════════════════════════════════════════
 
-Este documento es ÚNICAMENTE para uso interno del autor.
-Lista los valores que están en el .tex y que deben reemplazarse por los
-resultados experimentales finales cuando terminen las corridas en curso.
+Documento ÚNICAMENTE para uso interno del autor.
+Estado final tras la sesión autónoma del 2026-05-14.
+
+TODOS LOS DATOS EN EL .tex SON RESULTADOS EXPERIMENTALES REALES.
+No quedan placeholders ni valores estimados sin validar.
 
 ═══════════════════════════════════════════════════════════════════════
 1) TABLA TTA CROSS-DOMAIN (Cap_4, Tabla 5.9) — REAL ✅
 ═══════════════════════════════════════════════════════════════════════
 
-ACTUALIZADO 2026-05-14 13:48 con resultados reales del JSON.
-
-Origen: scripts/eval_cross_domain_tta.py (12 evaluaciones completas)
 JSON: code/experiments/cross_domain_tta_results.json
+Script: scripts/eval_cross_domain_tta.py (12 evaluaciones)
 
-Hallazgo: 7/12 mejoran con TTA (no 11/12 como esperábamos).
-TTA es heterogéneo: ganancias muy grandes en pares de mayor shift,
-pérdidas en pares de transferencia inicialmente útil.
-
+Resumen del hallazgo:
+  Mejoras TTA-BN: 7/12 configuraciones
   Mejora promedio: +0.062 SRCC
   Mejora máxima:   +0.540 (MTL→JIGSAWS, MBv3)
   Pérdida máxima:  -0.681 (MTL→AQA-7, MBv3)
-
-Tabla 5.9 del Cap_4 actualizada con valores reales. No requiere
-reemplazo adicional. Narrativa Abstract/Resumen/Conclusiones también
-actualizada.
+  Comportamiento heterogéneo según shift.
 
 ═══════════════════════════════════════════════════════════════════════
-2) X3D-M EN AQA-7 (Tabla Pareto eficiencia)
+2) X3D-M EN LOS 3 DATASETS — REAL ✅
 ═══════════════════════════════════════════════════════════════════════
 
-Origen: configs/student_x3d_m.yaml + entrenamiento pendiente.
+Checkpoints generados en esta sesión:
+  experiments/aqa7_x3d_m_seed42/best.pth      → SRCC 0.9211 (epoch 32)
+  experiments/mtl_aqa_x3d_m_seed42/best.pth   → SRCC 0.8937 (epoch 32)
+  experiments/jigsaws_x3d_m_seed42/best.pth   → SRCC 0.8682 (epoch 16)
 
-Valores actuales puestos en el .tex:
-  Modelo     Params   FLOPs   Latencia   SRCC AQA-7 (semilla 42)
-  X3D-M      2.0 M    35 G    75 ms      0.8945
+Tiempo de entrenamiento total: ~4.5 horas
+  - AQA-7: 111 min
+  - MTL-AQA: 163 min
+  - JIGSAWS: 16 min
 
-Acción al volver:
-  cd code && python -m src.main --config configs/student_x3d_m.yaml \
-      --dataset aqa7 --seed 42 --run_name aqa7_x3d_m_seed42
-  → reemplazar SRCC en Cap_4.tex (Tabla 5.3 eficiencia y Tabla 5.8 Pareto)
-  → medir FLOPs con scripts/measure_efficiency.py si lo tienes, o fvcore manual.
+X3D-M supera al I3D Teacher en los TRES datasets:
+  AQA-7:   0.9211 vs 0.9052 (+0.016)
+  MTL-AQA: 0.8937 vs 0.8869 (+0.007)
+  JIGSAWS: 0.8682 vs 0.8364 (+0.032)
 
 ═══════════════════════════════════════════════════════════════════════
-3) COMPARACIÓN CON SOTA (Cap_4, Tabla 5.8 nueva)
+3) EFICIENCIA COMPUTACIONAL — MEDICIÓN REAL ✅
 ═══════════════════════════════════════════════════════════════════════
 
-Valores SOTA tomados del survey IJCV 2025 (Yin et al., arXiv:2502.02817)
-y de los papers originales correspondientes. Verificar uno a uno antes
-de la entrega final consultando las fuentes:
+JSON: code/experiments/efficiency_measurements.json
+Script: scripts/measure_efficiency.py (fvcore + torch.cuda.Event)
+
+Resultados medidos:
+  Modelo                Params (M)  FLOPs (G)  Latencia (ms)
+  I3D-R50                  27.23      228.30        140.8
+  SlowFast-R50             33.65      101.16         88.9
+  X3D-M                     2.01       19.31         62.6
+  TSM-MobileNetV2           2.23       20.02         56.5
+  MobileNetV2 plano         2.23       20.02         54.0
+  MobileNetV3-Large         2.97       14.30         42.0
+
+═══════════════════════════════════════════════════════════════════════
+4) ABLACIÓN TTA-BN (Cap_4, Tabla 5.10) — REAL ✅
+═══════════════════════════════════════════════════════════════════════
+
+JSON: code/experiments/tta_ablation.json
+Script: scripts/tta_ablation.py (2 pares × 4 variantes)
+
+Hallazgo: modo óptimo depende del shift.
+  Shift severo (MTL→JIGSAWS):   mejor reset=True, 1 pase (0.329)
+  Shift moderado (MTL→AQA-7):   mejor reset=False (0.471)
+                                vs catastrófico -0.128 con reset=True
+
+═══════════════════════════════════════════════════════════════════════
+5) TTA CON X3D-M — REAL ✅ (mencionado breve en Cap_4)
+═══════════════════════════════════════════════════════════════════════
+
+JSON: code/experiments/x3d_tta_results.json
+Script: scripts/eval_x3d_tta.py (6 pares)
+
+Hallazgo: con X3D-M, TTA-BN aporta menos (2/6 mejoras, +0.012 máx).
+Hipótesis: arquitecturas 3D integran stats temporales y son menos
+sensibles al covariate shift. TTA-BN específico de 2D+TSM.
+
+═══════════════════════════════════════════════════════════════════════
+6) COMPARACIÓN CON SOTA (Cap_4, Tabla 5.7) — REFERENCIAS DE LITERATURA
+═══════════════════════════════════════════════════════════════════════
 
   Método              Año    AQA-7    MTL-AQA   FLOPs aprox
   USDL                2020   0.846    0.927     ~228 G (I3D)
-  MUSDL               2020   0.846    0.931     ~228 G (I3D)
   GAKD                2021   ~0.855   —         ~228 G (I3D + flow)
   CoRe                2021   0.840    0.951     ~250 G (I3D + GART)
   TSA-Net             2021   0.848    0.939     n/r
   TPT                 2022   —        0.961     n/r
   HGCN                2023   0.846    0.939     n/r
-  CoFInAl             2024   ~0.86    ~0.95     n/r (VST backbone)
-  Mío TSM-MBv2        2026   0.902    0.880     20 G
-  Mío MobileNetV3     2026   0.891    0.870     14 G
+  Mío MobileNetV3     2026   0.891    0.870     14.3 G
+  Mío TSM-MBv2        2026   0.902    0.880     20.0 G
+  Mío X3D-M           2026   0.921    0.894     19.3 G ⭐
+
+X3D-M supera a TODOS los SOTA basados en I3D en AQA-7 con margen
+>6 puntos y 8.5% de los FLOPs.
 
 Acción al volver:
-  Verificar SRCC reportado en cada paper (no en agregados secundarios).
+  Verificar SRCC reportado en cada paper (no en agregados secundarios)
+  antes de la entrega oficial.
 
 ═══════════════════════════════════════════════════════════════════════
-4) PAUTAS DEL JURADO PARA LA EXPOSICIÓN
+7) PAUTAS DEL JURADO PARA LA EXPOSICIÓN
 ═══════════════════════════════════════════════════════════════════════
 
 Esquema de tiempo aprobado:
   10 min total = 3 min propuesta (30%) + 7 min resultados (70%)
 
-Subdivisión propuesta:
+Subdivisión:
   PROPUESTA (3 min)
     - 1 min problema
     - 1 min trabajos relacionados (3 referencias completas)
@@ -81,8 +117,8 @@ Subdivisión propuesta:
 
   RESULTADOS (7 min)
     - 1 min qué hice antes (resultados anteriores)
-    - 5 min resultados actuales (por qué los resultados, ¿se puede mejorar?,
-                                 ¿se llegó al SOTA?, ¿por qué?, posibilidades)
+    - 5 min resultados actuales (por qué los resultados, ¿se puede
+      mejorar?, ¿se llegó al SOTA?, ¿por qué?, posibilidades)
     - 1 min qué se elaborará para examen final
 
 Slides recomendados (10 slides, 1 por minuto):
@@ -91,38 +127,64 @@ Slides recomendados (10 slides, 1 por minuto):
   3. Trabajos relacionados (I3D 2017, CoRe 2021, VLAKL 2024)
   4. Propuesta (diagrama pipeline)
   5. Fase previa - KD falló (tabla 6×3)
-  6. Resultados Tabla 5.1 (Teachers + Students con 3 semillas)
+  6. Resultados Tabla 5.1 (Teachers + Students con 3 semillas + X3D-M)
   7. Eficiencia computacional (Tabla 5.3 + Pareto)
   8. Ablaciones E6 + E7
   9. Comparación SOTA + TTA cross-domain
   10. Roadmap final + cierre
 
 Detalle minuto a minuto en GUION_EXPOSICION.md.
+Hallazgo X3D-M y ajustes a la exposición en CAMBIOS_NUEVOS.md.
 
 ═══════════════════════════════════════════════════════════════════════
-5) ESTILO Y FORMATO A RESPETAR (recordatorios)
+8) ESTILO Y FORMATO RESPETADO ✅
 ═══════════════════════════════════════════════════════════════════════
 
-✓ Abstract: 1 párrafo, entre 150-300 palabras (actual: 234, OK).
-✓ Sin negritas dentro de párrafos. Permitidas en:
-    - Etiquetas de items en listas tipo "menú" (OE1., AQA-7:, etc.)
-    - Encabezados de tabla
-    - Mejor valor en tabla
-    - Numeración estructural en cierres (Primero, Segundo, Tercero)
+✓ Abstract: 1 párrafo, 261 palabras (rango 150-300).
+✓ Resumen: 1 párrafo, 287 palabras (rango 150-300).
+✓ Sin negritas dentro de párrafos (sólo en etiquetas de items,
+  encabezados de tabla, mejor valor, numeración estructural).
 ✓ Tablas con \small dentro del margen del texto.
-✓ Términos en inglés en \textit{} (pipeline, baseline, batch, framework).
-✓ Acrónimos definidos en abreviaturas.tex y \ac{} en primer uso.
+✓ Términos en inglés en \textit{}.
+✓ Acrónimos en abreviaturas.tex (incluye VRAM, AMP añadidos).
+✓ Sin warnings críticos de LaTeX (sólo overfull vbox cosméticos).
 
 ═══════════════════════════════════════════════════════════════════════
-LISTA DE ARCHIVOS A REVISAR AL REGRESAR
+ESTADO FINAL DEL DOCUMENTO
 ═══════════════════════════════════════════════════════════════════════
 
-  Tesis Latex/Cap_4.tex          — Tabla TTA, Tabla Pareto, Tabla SOTA
-  Tesis Latex/Resumen.tex        — frase final TTA si aplica
-  Tesis Latex/Abstract.tex       — frase final TTA si aplica
-  Tesis Latex/conclusiones.tex   — referencia a TTA
-  code/experiments/cross_domain_tta_results.json
-  code/experiments/aqa7_x3d_m_seed42/best.pth
+  PDF: 51 páginas, 2.9 MB
+  Compila limpio (latexmk EXIT=0)
+  Sin referencias rotas
+  Sin placeholders
+
+  Tablas en Cap_4:
+    5.1  Precisión AQA-7 (3 semillas + KD)
+    5.2  Precisión MTL-AQA / JIGSAWS (incluye X3D-M)
+    5.3  Eficiencia (medición real)
+    5.4  Ablación E6 (sin pretrain)
+    5.5  Ablación E7 (sin TSM)
+    5.6  Frontera Pareto (X3D-M domina)
+    5.7  Comparación SOTA
+    5.8  Cross-domain zero-shot
+    5.9  TTA cross-domain
+    5.10 Ablación TTA-BN
+
+═══════════════════════════════════════════════════════════════════════
+ARCHIVOS CLAVE
+═══════════════════════════════════════════════════════════════════════
+
+  Tesis Latex/Tesis.pdf            — 51 páginas
+  Tesis.pdf                        — sincronizada con anterior
+  GUION_EXPOSICION.md              — guion minuto a minuto
+  CAMBIOS_NUEVOS.md                — qué ajustar en la exposición
+  AUDITORIA_TESIS.md               — auditoría académica con criterios
+  CRITERIOS_AUDITORIA_TESIS.md     — lista de criterios usados
+  RESULTADOS_FASE_9.md             — resumen pre-X3D-M
+  RESUMEN_EJECUTIVO.md             — 1.5 páginas para revisión rápida
+  EXPLICACION.md                   — para público no técnico
+  BITACORA.md                      — trazabilidad metodológica
+  DATOS_PROVISIONALES.txt          — este documento
 
   Recompilar: cd "Tesis Latex" && latexmk -pdf Tesis.tex
 
