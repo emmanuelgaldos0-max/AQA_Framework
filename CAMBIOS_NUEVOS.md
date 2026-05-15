@@ -45,18 +45,39 @@ excepto MobileNetV3**.
 | "Competitivo con SOTA basados en I3D en AQA-7." | "Supera a todos los SOTA basados en I3D en AQA-7 reportados (USDL, GAKD, CoRe, TSA-Net, HGCN), con margen >6 puntos SRCC sobre el mejor reportado." |
 | "TSM-MobileNetV2 domina la frontera Pareto en costo bajo." | "X3D-M domina la frontera Pareto absoluta (mejor SRCC con menos FLOPs); TSM-MBv2 y MBv3 quedan como opciones de costo aún más bajo." |
 
-## 3. TTA con resultados reales (también incluido en el .tex)
+## 3. TTA con resultados reales
 
 12 evaluaciones cross-domain completadas. Resumen:
 
-- **7/12 mejoran** con TTA-BN (no 11/12 como estimación inicial).
+- **7/12 mejoran** con TTA-BN (reset=True, 1 pase).
 - Mejora máxima: **+0.540 SRCC** (MTL-AQA → JIGSAWS, MobileNetV3).
 - Pérdida máxima: **−0.681 SRCC** (MTL-AQA → AQA-7, MobileNetV3).
 - Mejora promedio: +0.062 SRCC.
 
 **Interpretación:** TTA-BN aporta cuando la transferencia zero-shot es
-muy débil, pero degrada cuando ya hay señal útil preservada. Criterio
-selectivo recomendado como trabajo futuro.
+muy débil, pero degrada cuando ya hay señal útil preservada.
+
+### 3.1 Ablación TTA-BN (Tabla 5.10 nueva)
+
+Sobre 2 pares representativos (mejor y peor del eval principal), 4
+variantes: {1, 2 pases} × {reset True, False}.
+
+**Hallazgo clave:** el modo óptimo depende del shift:
+- **Shift severo** (MTL → JIGSAWS): mejor reset=True, 1 pase (SRCC=0.329).
+- **Shift moderado** (MTL → AQA-7): mejor reset=False (SRCC=0.471 vs
+  −0.128 con reset=True). Mantener stats del source y mezclarlas con
+  target preserva info útil compartida.
+
+Implicación: TTA-BN debería ser selectivo según shift estimado. Trabajo
+futuro claro.
+
+### 3.2 TTA con X3D-M (hallazgo adicional)
+
+Aplicar TTA-BN a X3D-M sólo mejora 2/6 pares (vs 7/12 en Students 2D),
+con ganancia máxima +0.012 SRCC. Hipótesis: arquitecturas 3D integran
+información temporal en sus stats internas y son menos sensibles al
+covariate shift que TTA-BN corrige. **TTA-BN es complementario y
+específico de arquitecturas 2D+TSM, no mejora universal**.
 
 ## 4. Cómo ajustar el guion de exposición
 
